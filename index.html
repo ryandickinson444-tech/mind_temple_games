@@ -1,0 +1,2440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIND TEMPLE</title>
+<style>
+  /* ================= MIND TEMPLE — TempleOS homage theme =================
+     16-color VGA palette, white field, DOS monospace, hard shadows.       */
+  :root {
+    --blk:#000000; --blu:#0000AA; --grn:#00AA00; --cyn:#00AAAA;
+    --red:#AA0000; --mag:#AA00AA; --brn:#AA5500; --lgy:#AAAAAA;
+    --dgy:#555555; --lbl:#5555FF; --lgr:#55FF55; --lcy:#55FFFF;
+    --lrd:#FF5555; --lmg:#FF55FF; --yel:#FFFF55; --wht:#FFFFFF;
+  }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--wht); color: var(--blk);
+    font: 15px/1.35 "Perfect DOS VGA 437", "Px437 IBM VGA8", "IBM Plex Mono", "Courier New", ui-monospace, monospace;
+  }
+  ::selection { background: var(--blu); color: var(--wht); }
+
+  /* ---- menubar (top) & status bar (bottom) ---- */
+  #menubar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    background: var(--wht); border-bottom: 2px solid var(--blk);
+    padding: 3px 8px; display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+    user-select: none;
+  }
+  #menubar .brand { font-weight: bold; margin-right: 6px; }
+  .mbtn {
+    background: none; border: none; padding: 2px 4px; cursor: pointer;
+    font: inherit; color: var(--blu);
+  }
+  .mbtn::before { content: "["; color: var(--dgy); }
+  .mbtn::after  { content: "]"; color: var(--dgy); }
+  .mbtn:hover { background: var(--yel); }
+  .mbtn.cur { color: var(--wht); background: var(--blu); }
+  .mbtn.cur::before, .mbtn.cur::after { color: var(--lcy); }
+  #statusbar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    background: var(--lgy); color: var(--blk); border-top: 2px solid var(--blk);
+    padding: 2px 8px; white-space: nowrap; overflow: hidden; user-select: none;
+  }
+  .curs { display: inline-block; width: 9px; height: 15px; background: var(--blk);
+    vertical-align: text-bottom; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .view { display: none; }
+  .view.on { display: block; }
+
+  /* ---- HOME shell ---- */
+  #homeView { position: fixed; inset: 30px 0 24px; overflow: auto; }
+  #homeInner { width: max-content; margin: 0 auto; padding: 16px 12px 40px; }
+  .doc { white-space: pre; line-height: 1.06; letter-spacing: 0; }
+  .docline { white-space: pre; }
+  .docEntry { cursor: pointer; }
+  .docEntry:hover .inner { background: var(--yel); }
+  #oracleOut { margin: 4px 0 0 1ch; min-height: 20px; line-height: 1.3; }
+  #oracleOut .w { font-weight: bold; }
+  #homeFoot { margin: 10px 0 0 1ch; color: var(--dgy); }
+
+  /* ---- shared: canvases, buttons, inputs ---- */
+  canvas { image-rendering: pixelated; }
+  #c { display: block; cursor: grab; }
+  #c.dragging { cursor: grabbing; }
+  button { font: inherit; }
+  .view button, #controls button, .panel button, .actions button {
+    background: var(--wht); color: var(--blu);
+    border: 1px solid var(--blk); box-shadow: 2px 2px 0 var(--lgy);
+    padding: 3px 8px; cursor: pointer;
+  }
+  .view button:hover, #controls button:hover { background: var(--yel); }
+  .view button:active, #controls button:active { box-shadow: none; transform: translate(2px,2px); }
+  input[type=range] { accent-color: var(--blu); vertical-align: middle; }
+  input[type=text], input[type=number] {
+    font: inherit; background: var(--wht); color: var(--blk);
+    border: 1px solid var(--blk); padding: 3px 6px;
+  }
+
+  /* ---- TURMITE LAB chrome ---- */
+  #controls {
+    position: fixed; top: 34px; left: 10px; z-index: 40;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 6px 10px; background: var(--wht);
+    border: 2px solid var(--blk); box-shadow: 4px 4px 0 var(--lgy);
+    user-select: none;
+  }
+  .sep { width: 2px; height: 18px; background: var(--lgy); }
+  #zoomLabel, #steps { color: var(--dgy); }
+  #steps { min-width: 100px; }
+  #zoomLabel { min-width: 52px; text-align: right; }
+
+  .panel {
+    position: fixed; top: 86px; left: 10px; z-index: 40;
+    width: min(390px, calc(100vw - 24px));
+    padding: 0 0 12px; background: var(--wht);
+    border: 2px solid var(--blu); box-shadow: 5px 5px 0 var(--lgy);
+    display: none; max-height: calc(100vh - 120px); overflow-y: auto;
+  }
+  .panel.open { display: block; }
+  .panel h3 {
+    margin: 0 0 10px; font-size: 15px; font-weight: bold;
+    background: var(--blu); color: var(--wht); padding: 3px 10px;
+  }
+  .panel > *:not(h3) { margin-left: 12px; margin-right: 12px; }
+  .panel .legend { color: var(--dgy); font-size: 13px; margin-bottom: 10px; }
+  .panel .legend b { color: var(--blk); }
+  .panel .legend i { color: var(--mag); font-style: normal; }
+
+  #chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 6px; background: var(--wht);
+    border: 1px solid var(--blk); cursor: pointer;
+  }
+  .chip:hover { background: var(--yel); }
+  .chip .sw { width: 14px; height: 14px; border: 1px solid var(--blk); }
+  .chip .lbl { font-weight: bold; min-width: 10px; text-align: center; }
+  .chip .x { color: var(--dgy); margin-left: 2px; padding: 0 2px; }
+  .chip .x:hover { color: var(--red); }
+  #ruleInput {
+    width: 100%; box-sizing: border-box; letter-spacing: 3px; margin-bottom: 10px;
+    color: var(--blu); font-weight: bold;
+  }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  #searchStats { color: var(--dgy); font-size: 13px; margin-top: 8px; margin-bottom: 8px; }
+  #bestRule { font-size: 18px; letter-spacing: 3px; color: var(--blu); font-weight: bold; word-break: break-all; margin: 2px 0; }
+  #bestMeta { color: var(--grn); font-size: 13px; margin-bottom: 8px; }
+  #thumbWrap { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+  #thumb { border: 1px solid var(--blk); background: var(--wht); flex: none; }
+  #topList { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; margin-bottom: 8px; }
+  .toprow {
+    display: flex; justify-content: space-between; gap: 8px;
+    padding: 3px 6px; background: var(--wht); border: 1px solid var(--blk);
+    cursor: pointer; font-size: 13px;
+  }
+  .toprow:hover { background: var(--yel); }
+  .toprow .r { color: var(--blu); letter-spacing: 2px; font-weight: bold; }
+  .toprow .s { color: var(--dgy); flex: none; }
+  #eliteMap { display: grid; grid-template-columns: repeat(10, 18px); gap: 3px; margin-top: 8px; margin-bottom: 2px; width: max-content; }
+  .niche { width: 18px; height: 18px; background: #EEE; border: 1px solid var(--lgy); cursor: default; }
+  .niche.occ { cursor: pointer; border-color: var(--blk); }
+  .niche.occ:hover { border-color: var(--red); }
+  .niche.sel { border: 2px solid var(--red); width: 16px; height: 16px; }
+
+  /* ---- RULE SCROLLS ---- */
+  #ecaView { position: fixed; inset: 30px 0 24px; }
+  #ecaBar {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    padding: 6px 10px; border-bottom: 2px solid var(--blk); background: var(--wht);
+  }
+  #ecaBar .lab { color: var(--dgy); }
+  #ecaRuleNum { width: 56px; font-weight: bold; color: var(--blu); }
+  #ecaCanvas { display: block; background: var(--wht); }
+  #ecaName { color: var(--mag); font-weight: bold; min-width: 150px; }
+  #ecaLaw {
+    display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap;
+    padding: 6px 10px 8px; border-bottom: 2px solid var(--blk); background: var(--wht);
+    user-select: none;
+  }
+  #ecaLaw .lab { color: var(--dgy); align-self: center; }
+  .lawItem { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .lawTop { display: flex; gap: 1px; }
+  .lawCell { width: 12px; height: 12px; border: 1px solid var(--blk); background: var(--wht); }
+  .lawCell.on { background: var(--blk); }
+  .lawOut {
+    width: 14px; height: 14px; border: 1px solid var(--blk); background: var(--wht);
+    cursor: pointer; box-shadow: 2px 2px 0 var(--lgy);
+  }
+  .lawOut.on { background: var(--blk); }
+  .lawOut:hover { outline: 2px solid var(--yel); }
+  #ecaLaw .hintTxt { color: var(--dgy); align-self: center; }
+
+  /* ---- LIGHTS OUT ---- */
+  #loView { position: fixed; inset: 30px 0 24px; overflow-y: auto; }
+  #loInner { max-width: 520px; margin: 0 auto; padding: 24px 16px; text-align: center; }
+  #loGrid { display: grid; gap: 6px; width: max-content; margin: 16px auto; }
+  .loCell {
+    width: 52px; height: 52px; border: 2px solid var(--blk); cursor: pointer;
+    background: #3A3A3A; box-shadow: 3px 3px 0 var(--lgy); position: relative;
+  }
+  .loCell.lit { background: var(--yel); box-shadow: 3px 3px 0 var(--brn); }
+  .loCell.hint { outline: 3px solid var(--red); outline-offset: -6px; }
+  .loCell.sol::after {
+    content: ""; position: absolute; inset: 36%;
+    background: var(--red); border-radius: 50%;
+  }
+  .loCell:active { transform: translate(2px,2px); box-shadow: none; }
+  #loMsg { min-height: 24px; font-weight: bold; color: var(--grn); margin-top: 8px; }
+  #loStats { color: var(--dgy); margin-top: 4px; }
+  #loTeach {
+    text-align: left; border: 2px solid var(--blk); box-shadow: 4px 4px 0 var(--lgy);
+    padding: 8px 12px; margin: 18px auto 0; max-width: 460px; color: var(--dgy);
+  }
+  #loTeach b { color: var(--blk); }
+  .diffBtn.cur, .loMode.cur { background: var(--blu) !important; color: var(--wht) !important; }
+  #loGrid.cube { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; width: auto; }
+  .loSlice { display: grid; gap: 4px; }
+  .sliceLab { color: var(--dgy); font-size: 13px; text-align: center; grid-column: 1 / -1; }
+  #loGrid.cube .loCell { width: 38px; height: 38px; }
+
+  /* ---- TURMITE 3D annex ---- */
+  #t3_g { display: block; cursor: grab; }
+  #t3_g.dragging { cursor: grabbing; }
+  #t3_controls {
+    position: fixed; top: 34px; left: 10px; z-index: 40;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 6px 10px; background: var(--wht);
+    border: 2px solid var(--blk); box-shadow: 4px 4px 0 var(--lgy);
+    user-select: none;
+  }
+  #t3_steps { color: var(--dgy); min-width: 200px; }
+  #t3_ruleInput { width: 100%; box-sizing: border-box; letter-spacing: 3px;
+    margin-bottom: 10px; color: var(--blu); font-weight: bold; }
+  #t3_searchStats { color: var(--dgy); font-size: 13px; margin-top: 8px; margin-bottom: 8px; }
+  #t3_bestRule { font-size: 18px; letter-spacing: 3px; color: var(--blu); font-weight: bold;
+    word-break: break-all; margin: 2px 0; }
+  #t3_bestMeta { color: var(--grn); font-size: 13px; margin-bottom: 8px; }
+  #t3_thumbWrap { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+  #t3_thumb { border: 1px solid var(--blk); background: var(--wht); flex: none; }
+  #t3_topList { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; margin-bottom: 8px; }
+  #t3_eliteMap { display: grid; grid-template-columns: repeat(10, 18px); gap: 3px;
+    margin-top: 8px; margin-bottom: 2px; width: max-content; }
+</style>
+</head>
+<body>
+  <div id="menubar">
+    <span class="brand"><span style="color:var(--blu)">M</span><span style="color:var(--grn)">i</span><span style="color:var(--red)">n</span><span style="color:var(--mag)">d</span><span style="color:var(--brn)">T</span><span style="color:var(--cyn)">e</span><span style="color:var(--blu)">m</span><span style="color:var(--grn)">p</span><span style="color:var(--red)">l</span><span style="color:var(--mag)">e</span></span>
+    <button class="mbtn" data-view="home">Home</button>
+    <button class="mbtn" data-view="turmite">Turmite Lab</button>
+    <button class="mbtn" data-view="t3d">Turmite 3D</button>
+    <button class="mbtn" data-view="eca">Rule Scrolls</button>
+    <button class="mbtn" data-view="lights">Lights Out</button>
+    <button class="mbtn" id="oracleBtn" title="draw three words from the well">Oracle</button>
+    <span style="margin-left:auto;color:var(--dgy)">3 engines for thinking</span>
+  </div>
+
+  <!-- ================= HOME ================= -->
+  <div id="homeView" class="view">
+    <div id="homeInner">
+      <div class="doc" id="homeDoc">
+      <div class="docline">╔══════════════════════════════════════════════════════════════════════╗</div>
+      <div class="docline">║<span class="inner"><span style="color:var(--blk);font-weight:bold"> MindTemple.HC</span>                                                <span style="color:var(--dgy)">[Doc]  </span> </span>║</div>
+      <div class="docline">╠══════════════════════════════════════════════════════════════════════╣</div>
+      <div class="docline">║<span class="inner">                                                                      </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--blu)">█   █ </span><span style="color:var(--grn)">█████ </span><span style="color:var(--red)">█   █ </span><span style="color:var(--mag)">████  </span><span style="color:var(--brn)">      </span><span style="color:var(--cyn)">█████ </span><span style="color:var(--blu)">█████ </span><span style="color:var(--grn)">█   █ </span><span style="color:var(--red)">████  </span><span style="color:var(--mag)">█     </span><span style="color:var(--brn)">█████ </span>  </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--blu)">██ ██ </span><span style="color:var(--grn)">  █   </span><span style="color:var(--red)">██  █ </span><span style="color:var(--mag)">█   █ </span><span style="color:var(--brn)">      </span><span style="color:var(--cyn)">  █   </span><span style="color:var(--blu)">█     </span><span style="color:var(--grn)">██ ██ </span><span style="color:var(--red)">█   █ </span><span style="color:var(--mag)">█     </span><span style="color:var(--brn)">█     </span>  </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--blu)">█ █ █ </span><span style="color:var(--grn)">  █   </span><span style="color:var(--red)">█ █ █ </span><span style="color:var(--mag)">█   █ </span><span style="color:var(--brn)">      </span><span style="color:var(--cyn)">  █   </span><span style="color:var(--blu)">████  </span><span style="color:var(--grn)">█ █ █ </span><span style="color:var(--red)">████  </span><span style="color:var(--mag)">█     </span><span style="color:var(--brn)">████  </span>  </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--blu)">█   █ </span><span style="color:var(--grn)">  █   </span><span style="color:var(--red)">█  ██ </span><span style="color:var(--mag)">█   █ </span><span style="color:var(--brn)">      </span><span style="color:var(--cyn)">  █   </span><span style="color:var(--blu)">█     </span><span style="color:var(--grn)">█   █ </span><span style="color:var(--red)">█     </span><span style="color:var(--mag)">█     </span><span style="color:var(--brn)">█     </span>  </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--blu)">█   █ </span><span style="color:var(--grn)">█████ </span><span style="color:var(--red)">█   █ </span><span style="color:var(--mag)">████  </span><span style="color:var(--brn)">      </span><span style="color:var(--cyn)">  █   </span><span style="color:var(--blu)">█████ </span><span style="color:var(--grn)">█   █ </span><span style="color:var(--red)">█     </span><span style="color:var(--mag)">█████ </span><span style="color:var(--brn)">█████ </span>  </span>║</div>
+      <div class="docline">║<span class="inner">                                                                      </span>║</div>
+      <div class="docline">║<span class="inner"><span style="color:var(--dgy)">      three small engines for thinking · an offering in 16 colors</span>     </span>║</div>
+      <div class="docline">║<span class="inner">                                                                      </span>║</div>
+      <div class="docline">╟──────────────────────────────────────────────────────────────────────╢</div>
+      <div class="docline">║<span class="inner">                                                                      </span>║</div>
+      <div class="docEntry" data-view="turmite">
+      <div class="docline">║<span class="inner">  <span style="color:var(--blu)">▄▀▄  </span>  <span style="color:var(--blu)">▶ </span><span style="color:var(--blu);font-weight:bold;text-decoration:underline">TURMITE LAB</span>                                                </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--blu)">█▀█  </span>    <span style="color:var(--blk)">A 2-D Turing machine walks and paints. Breed rules with a</span>  </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--blu)">▀ ▀  </span>    <span style="color:var(--dgy)">quality-diversity search; collect a zoo of lasting order.</span>  </span>║</div>
+      </div>
+      <div class="docline">║<span class="inner">                                                                      </span>║</div>
+      <div class="docEntry" data-view="eca">
+      <div class="docline">║<span class="inner">  <span style="color:var(--grn)">  ▄  </span>  <span style="color:var(--grn)">▶ </span><span style="color:var(--grn);font-weight:bold;text-decoration:underline">RULE SCROLLS</span>                                               </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--grn)"> ▄█▄ </span>    <span style="color:var(--blk)">The 256 elementary 1-D laws, scrolling like scripture.</span>     </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--grn)">▄█▀█▄</span>    <span style="color:var(--dgy)">Rule 30 boils. Rule 90 weaves. Rule 110 computes anything.</span> </span>║</div>
+      </div>
+      <div class="docline">║<span class="inner">                                                                      </span>║</div>
+      <div class="docEntry" data-view="lights">
+      <div class="docline">║<span class="inner">  <span style="color:var(--brn)"> ▄█▄ </span>  <span style="color:var(--brn)">▶ </span><span style="color:var(--brn);font-weight:bold;text-decoration:underline">LIGHTS OUT</span>                                                 </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--brn)"> ███ </span>    <span style="color:var(--blk)">Every press flips a cross of lamps. Darken the board.</span>      </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--brn)">  ▀  </span>    <span style="color:var(--dgy)">Pure logic over GF(2) — parity is the only truth.</span>          </span>║</div>
+      </div>
+      <div class="docline">║<span class="inner">                                                                      </span>║</div>
+      <div class="docEntry" data-view="t3d">
+      <div class="docline">║<span class="inner">  <span style="color:var(--mag)">▄▀▀▄ </span>  <span style="color:var(--mag)">▶ </span><span style="color:var(--mag);font-weight:bold;text-decoration:underline">TURMITE 3D</span>                                                 </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--mag)">▌██▐ </span>    <span style="color:var(--blk)">The walker gains a third axis: a 10,000³ graph-space torus.</span></span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--mag)">▀▄▄▀ </span>    <span style="color:var(--dgy)">Same zoo, recalibrated for sheets, scaffolds, and flight.</span>  </span>║</div>
+      </div>
+      <div class="docline">║<span class="inner">                                                                      </span>║</div>
+      <div class="docline">╟──────────────────────────────────────────────────────────────────────╢</div>
+      <div class="docline">║<span class="inner"><span style="color:var(--blk)">  The Oracle draws three words from the well.   </span><span style="color:var(--blu);text-decoration:underline;cursor:pointer" id="oracleBtn2">[Draw]</span>                </span>║</div>
+      <div class="docline">║<span class="inner">                                                                      </span>║</div>
+      <div class="docline">╚══════════════════════════════════════════════════════════════════════╝</div>
+      </div>
+      <div id="oracleOut"></div>
+      <div id="homeFoot">Ready. Click a name above, or use the menu bar. The evolve search keeps computing in every room.<span class="curs"></span></div>
+    </div>
+  </div>
+
+  <!-- ================= TURMITE LAB ================= -->
+  <div id="turmiteView" class="view">
+  <canvas id="c"></canvas>
+
+  <div id="controls">
+    <button id="toggle">Pause</button>
+    <button id="reset">Reset</button>
+    <button id="paintBtn" title="how new cells are colored">Paint: state</button>
+    <button id="antsBtn" title="number of ants sharing the grid">Ants: 1</button>
+    <button id="ruleBtn">Rule</button>
+    <button id="searchBtn">Evolve</button>
+    <span class="sep"></span>
+    <button id="zoomOut">&minus;</button>
+    <button id="zoomIn">&plus;</button>
+    <button id="fit">Fit</button>
+    <button id="pngBtn" title="save the current view as an image">PNG</button>
+    <button id="shareBtn" title="copy a link that opens this rule + settings">Share</button>
+    <span id="zoomLabel">2.0&times;</span>
+    <span class="sep"></span>
+    <label>speed <input id="speed" type="range" min="1" max="1000" value="80"></label>
+    <span id="steps">step 0</span>
+  </div>
+
+  <!-- rule editor -->
+  <div id="rulePanel" class="panel">
+    <h3>Rule</h3>
+    <div class="legend">
+      One instruction per state; the ant advances a cell to the next state on each visit.
+      <br><b>L</b> left &nbsp; <b>R</b> right &nbsp; <b>N</b> straight &nbsp;
+      <b>^ v &lt; &gt;</b> absolute up/down/left/right.
+      <br>Click a chip to cycle it, or type the rule below.
+    </div>
+    <div id="chips"></div>
+    <input id="ruleInput" type="text" spellcheck="false" autocomplete="off">
+    <div class="actions">
+      <button id="addState">+ state</button>
+      <button id="applyRule">Apply &amp; restart</button>
+    </div>
+  </div>
+
+  <!-- evolutionary search -->
+  <div id="searchPanel" class="panel">
+    <h3>Evolve &mdash; a zoo of lasting order</h3>
+    <div class="legend">
+      A quality-diversity search (MAP-Elites): every rule is scored (repeating <b>texture</b>
+      &times; a <b>fractal-dimension</b> band &times; <b>symmetry</b>, with bonuses for
+      <i>emergent</i> order and ballistic <b>highways</b>) and then filed into a niche by its
+      character &mdash; dimension across, symmetry down. Each niche keeps its own champion, so
+      lacy triangles, highways, and crystals all hold seats. Parents are drawn from across the
+      map, which keeps the search discovering <i>different</i> things, not just better ones.
+    </div>
+    <div class="actions">
+      <button id="searchToggle">Start</button>
+      <label>max states <input id="maxStatesR" type="range" min="3" max="8" value="5"></label>
+      <span id="maxStatesL" style="color:#888">5</span>
+    </div>
+    <div id="searchStats">idle</div>
+    <div id="thumbWrap">
+      <canvas id="thumb" width="150" height="150"></canvas>
+      <div>
+        <div style="color:#888;font-size:12px">selected (click a niche or rule)</div>
+        <div id="bestRule">&mdash;</div>
+        <div id="bestMeta"></div>
+        <button id="loadBest">Load into view</button>
+      </div>
+    </div>
+    <div style="color:#888;font-size:12px">species map &mdash; fractal dimension 1.0&rarr;2.0 across, symmetry &darr;</div>
+    <div id="eliteMap"></div>
+    <div style="color:#888;font-size:12px;margin-top:8px">top rules (click to view)</div>
+    <div id="topList"></div>
+  </div>
+  </div><!-- /turmiteView -->
+
+  <!-- ================= RULE SCROLLS ================= -->
+  <div id="ecaView" class="view">
+    <div id="ecaBar">
+      <span class="lab">rule</span>
+      <input id="ecaRuleNum" type="number" min="0" max="255" value="30">
+      <button id="ecaRandomRule">Random</button>
+      <span class="lab">famous:</span>
+      <button class="ecaPreset" data-r="30">30</button>
+      <button class="ecaPreset" data-r="54">54</button>
+      <button class="ecaPreset" data-r="90">90</button>
+      <button class="ecaPreset" data-r="110">110</button>
+      <button class="ecaPreset" data-r="184">184</button>
+      <span class="sep"></span>
+      <span class="lab">seed</span>
+      <button id="ecaSeedBtn">single</button>
+      <button id="ecaRestart">Restart</button>
+      <button id="ecaPause">Pause</button>
+      <label><span class="lab">speed</span> <input id="ecaSpeed" type="range" min="1" max="30" value="4"></label>
+      <span id="ecaName"></span>
+    </div>
+    <div id="ecaLaw">
+      <span class="lab">the law:</span>
+      <span id="lawItems" style="display:flex;gap:14px;flex-wrap:wrap"></span>
+      <span class="hintTxt">&larr; click an output cell to rewrite the law mid-scroll</span>
+    </div>
+    <canvas id="ecaCanvas"></canvas>
+  </div>
+
+  <!-- ================= LIGHTS OUT ================= -->
+  <div id="loView" class="view">
+    <div id="loInner">
+      <div class="deco">&#9608;&#9619;&#9618;&#9617; LIGHTS OUT &#9617;&#9618;&#9619;&#9608;</div>
+      <div>Press a lamp: it and its four neighbors flip. Extinguish them all.</div>
+      <div class="actions" style="justify-content:center;margin-top:12px">
+        <span style="color:var(--dgy)">mode</span>
+        <button class="loMode cur" data-dim="2">2-D</button>
+        <button class="loMode" data-dim="3">3-D cube</button>
+        <span id="loSizes2">
+          <span style="color:var(--dgy)">board</span>
+          <button class="loSize" data-n="3">3&times;3</button>
+          <button class="loSize" data-n="5">5&times;5</button>
+          <button class="loSize" data-n="7">7&times;7</button>
+        </span>
+        <span id="loSizes3" style="display:none">
+          <span style="color:var(--dgy)">cube</span>
+          <button class="loSize3" data-n="3">3&sup3;</button>
+          <button class="loSize3" data-n="4">4&sup3;</button>
+        </span>
+      </div>
+      <div class="actions" style="justify-content:center;margin-top:6px">
+        <span style="color:var(--dgy)">difficulty</span>
+        <button class="diffBtn" data-d="3">Easy</button>
+        <button class="diffBtn" data-d="6">Medium</button>
+        <button class="diffBtn" data-d="10">Hard</button>
+        <button class="diffBtn" data-d="-1">Cruel</button>
+        <button id="loScramble">New board</button>
+      </div>
+      <div class="actions" style="justify-content:center;margin-top:6px">
+        <button id="loHint">Hint (next press)</button>
+        <button id="loSolveBtn">Show solution</button>
+        <button id="loUndo">Undo</button>
+        <button id="loCounter">Counter: off</button>
+      </div>
+      <div id="loGrid"></div>
+      <div id="loMsg"></div>
+      <div id="loStats"></div>
+      <div id="loTeach">
+        <b>Why this is hard by hand:</b> pressing is commutative and self-inverse &mdash; order
+        never matters, and pressing twice undoes it. So a solution is just a <i>set</i> of cells,
+        and there are 2<sup>n&sup2;</sup> candidate sets. Symmetric guessing lands you in symmetric
+        traps like all-on or one-lit-center (both solvable, neither obvious).
+        <br><br>
+        <b>In 3-D</b> the cross gains two more arms (the lamp above and below in the next
+        slices), the board is shown as z-layers side by side, and the same GF(2) algebra
+        still rules everything.
+        <br><br>
+        <b>The technique &mdash; "chase the lights":</b> ignore the top row. Walk the second row and
+        press underneath every lit cell above it; repeat downward. All lights end up herded into the
+        bottom row. Which bottom pattern you get determines a short fixed set of top-row presses
+        that finishes it &mdash; then chase once more. Try <b>Easy</b> first: three presses, findable by eye.
+        <br><br>
+        <b>On the assists:</b> the remaining-press counter is off by default because it hands you
+        perfect play &mdash; try a press, see if the number fell, undo if it rose. Turn it on to
+        study the structure, leave it off to actually solve.
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TURMITE 3D ================= -->
+  <div id="t3View" class="view">
+  <canvas id="t3_g"></canvas>
+
+  <div id="t3_controls">
+    <button id="t3_toggle">Pause</button>
+    <button id="t3_reset">Reset</button>
+    <button id="t3_ruleBtn">Rule</button>
+    <button id="t3_searchBtn">Evolve</button>
+    <span class="sep"></span>
+    <button id="t3_fit">Fit</button>
+    <button id="t3_followBtn">Follow: off</button>
+    <button id="t3_pngBtn">PNG</button>
+    <span class="sep"></span>
+    <label>speed <input id="t3_speed" type="range" min="1" max="5000" value="400"></label>
+    <span id="t3_steps">step 0</span>
+  </div>
+
+  <div class="panel" id="t3_rulePanel">
+    <h3>The Law of the Walker</h3>
+    <div class="legend">
+      One instruction per cell state; each visit advances the state. In three dimensions the
+      walker carries a full frame &mdash; a forward and an up &mdash; so the alphabet is
+      <b>N</b> straight &middot; <b>L/R</b> yaw &middot; <b>U/D</b> pitch &middot;
+      <b>C/A</b> roll (roll keeps heading but re-aims what "left" means).
+      State 0 rules all unexplored space, so it must be a turn (L/R/U/D).
+    </div>
+    <input id="t3_ruleInput" type="text" spellcheck="false">
+    <div class="actions">
+      <button id="t3_applyRule">Apply &amp; restart</button>
+      <button id="t3_randRule">Random law</button>
+    </div>
+  </div>
+
+  <div class="panel" id="t3_searchPanel">
+    <h3>Evolve &mdash; a zoo of spatial order</h3>
+    <div class="legend">
+      The same quality-diversity search as the flat lab, recalibrated for space: repeating
+      <b>texture</b> amplified by a 3-D <b>fractal band</b> (full credit D&nbsp;1.75&ndash;2.65:
+      textured sheets and lacy scaffolds; nothing for threads, helices, or space-filling noise),
+      by 2-D/3-D <b>spread</b>, and by <b>symmetry</b> about the structure's own center
+      (flat axes don't count). Emergent order and ballistic flight earn bonuses. Each niche of
+      the map &mdash; dimension across (1&rarr;3), symmetry down &mdash; keeps its own champion.
+      The evolve arena is the bounded &plusmn;5000 cube (the wall ends a run, like the 2-D
+      screen edge); only the live view wraps.
+    </div>
+    <div class="actions">
+      <button id="t3_searchToggle">Start</button>
+      <label>max states <input id="t3_maxStatesR" type="range" min="3" max="8" value="5"></label>
+      <span id="t3_maxStatesL" style="color:#888">5</span>
+    </div>
+    <div id="t3_searchStats">idle</div>
+    <div id="t3_thumbWrap">
+      <canvas id="t3_thumb" width="150" height="150"></canvas>
+      <div>
+        <div style="color:#888;font-size:12px">selected (click a niche or rule)</div>
+        <div id="t3_bestRule">&mdash;</div>
+        <div id="t3_bestMeta"></div>
+        <button id="t3_loadBest">Load into view</button>
+      </div>
+    </div>
+    <div style="color:#888;font-size:12px">species map &mdash; fractal dimension 1.0&rarr;3.0 across, color &darr;</div>
+    <div id="t3_eliteMap"></div>
+    <div style="color:#888;font-size:12px;margin-top:8px">top rules (click to view)</div>
+    <div id="t3_topList"></div>
+  </div>
+
+  </div><!-- /t3View -->
+
+  <div id="statusbar"><span id="statusText"></span> <span class="curs"></span></div>
+
+<script>
+/* ============================ core simulation ============================ */
+const INITIAL_ZOOM = 2;
+const CYCLE = ['L', 'R', 'N', '^', '>', 'v', '<'];
+const ALPHA = ['L', 'R', 'N', '^', '>', 'v', '<'];
+
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const buffer = document.createElement("canvas");
+const bctx = buffer.getContext("2d");
+
+const DX = [0, 1, 0, -1];   // 0=up 1=right 2=down 3=left
+const DY = [-1, 0, 1, 0];
+
+let rule = ['R', 'L'];
+let numStates = rule.length;
+
+let COLS, ROWS, grid, ants = [], stepCount;
+let antCount = 1, paintMode = "state";
+let zoom = INITIAL_ZOOM, panX = 0, panY = 0;
+
+function colorFor(i) {
+  if (i === 0) return "#ffffff";
+  if (i === 1) return "#000000";
+  return "hsl(" + (((i - 2) * 47) % 360) + ", 70%, 50%)";
+}
+function turn(d, sym) {
+  switch (sym) {
+    case 'L': return (d + 3) & 3;
+    case 'R': return (d + 1) & 3;
+    case 'N': return d;
+    case '^': return 0;
+    case '>': return 1;
+    case 'v': return 2;
+    case '<': return 3;
+  }
+  return d;
+}
+
+function resizeView() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+function fitView() {
+  zoom = INITIAL_ZOOM;
+  panX = (canvas.width - COLS * zoom) / 2;
+  panY = (canvas.height - ROWS * zoom) / 2;
+  updateZoomLabel();
+}
+function resetSim() {
+  if (!COLS) {
+    COLS = Math.max(1, Math.floor(window.innerWidth / INITIAL_ZOOM));
+    ROWS = Math.max(1, Math.floor(window.innerHeight / INITIAL_ZOOM));
+    buffer.width = COLS; buffer.height = ROWS;
+  }
+  grid = new Uint8Array(COLS * ROWS);
+  const cx = COLS >> 1, cy = ROWS >> 1;
+  ants = [];
+  for (let k = 0; k < antCount; k++) ants.push({ x: cx, y: cy, d: (k * (4 / antCount)) & 3 });
+  stepCount = 0;
+  bctx.fillStyle = colorFor(0);
+  bctx.fillRect(0, 0, COLS, ROWS);
+  fitView(); updateLabel();
+}
+function paintCell(x, y, state) {
+  if (state === 0) bctx.fillStyle = "#ffffff";
+  else if (paintMode === "strata")                    // hue = WHEN it was painted
+    bctx.fillStyle = "hsl(" + ((stepCount * 0.0024) % 360).toFixed(1) + ", 65%, " + (state === 1 ? 42 : 58) + "%)";
+  else bctx.fillStyle = colorFor(state);
+  bctx.fillRect(x, y, 1, 1);
+}
+function step() {
+  for (const a of ants) {
+    const i = a.y * COLS + a.x;
+    const c = grid[i];
+    a.d = turn(a.d, rule[c]);
+    const next = (c + 1) % numStates;
+    grid[i] = next;
+    paintCell(a.x, a.y, next);
+    a.x = (a.x + DX[a.d] + COLS) % COLS;
+    a.y = (a.y + DY[a.d] + ROWS) % ROWS;
+  }
+  stepCount++;
+}
+function render() {
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(buffer, 0, 0, COLS, ROWS, panX, panY, COLS * zoom, ROWS * zoom);
+  const s = Math.max(zoom, 3);
+  ctx.fillStyle = "#AA0000";
+  for (const a of ants) ctx.fillRect(panX + a.x * zoom, panY + a.y * zoom, s, s);
+}
+function updateLabel() { document.getElementById("steps").textContent = "step " + stepCount.toLocaleString(); }
+function updateZoomLabel() { document.getElementById("zoomLabel").textContent = zoom.toFixed(1) + "\u00d7"; }
+
+let running = true, stepsPerFrame = 80;
+function loop() {
+  if (window.MT_VIEW && window.MT_VIEW !== "turmite") { requestAnimationFrame(loop); return; }
+  if (running) { for (let n = 0; n < stepsPerFrame; n++) step(); updateLabel(); }
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* ============================ camera ============================ */
+function zoomAt(sx, sy, factor) {
+  const nz = Math.min(60, Math.max(0.1, zoom * factor));
+  factor = nz / zoom;
+  panX = sx - (sx - panX) * factor;
+  panY = sy - (sy - panY) * factor;
+  zoom = nz; updateZoomLabel();
+}
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.1 : 1 / 1.1);
+}, { passive: false });
+let dragging = false, lastX = 0, lastY = 0;
+canvas.addEventListener("pointerdown", (e) => {
+  dragging = true; lastX = e.clientX; lastY = e.clientY;
+  canvas.classList.add("dragging"); canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  panX += e.clientX - lastX; panY += e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY;
+});
+canvas.addEventListener("pointerup", () => { dragging = false; canvas.classList.remove("dragging"); });
+
+/* ============================ rule editor ============================ */
+const rulePanel = document.getElementById("rulePanel");
+const chipsEl = document.getElementById("chips");
+const ruleInput = document.getElementById("ruleInput");
+let editRule = rule.slice();
+function renderChips() {
+  chipsEl.innerHTML = "";
+  editRule.forEach((ch, idx) => {
+    const chip = document.createElement("div");
+    chip.className = "chip"; chip.title = "state " + idx + " \u2014 click to cycle";
+    const sw = document.createElement("span"); sw.className = "sw"; sw.style.background = colorFor(idx);
+    const lbl = document.createElement("span"); lbl.className = "lbl"; lbl.textContent = ch;
+    chip.append(sw, lbl);
+    chip.onclick = (e) => {
+      if (e.target.classList.contains("x")) return;
+      editRule[idx] = CYCLE[(CYCLE.indexOf(ch) + 1) % CYCLE.length]; syncFromEdit();
+    };
+    if (editRule.length > 2) {
+      const x = document.createElement("span"); x.className = "x"; x.textContent = "\u00d7";
+      x.onclick = (e) => { e.stopPropagation(); editRule.splice(idx, 1); syncFromEdit(); };
+      chip.append(x);
+    }
+    chipsEl.append(chip);
+  });
+}
+function syncFromEdit() { ruleInput.value = editRule.join(""); renderChips(); }
+ruleInput.addEventListener("input", () => {
+  const out = [];
+  for (const raw of ruleInput.value) {
+    const ch = raw.toUpperCase();
+    if ("LRN^<>".includes(ch)) out.push(ch);
+    else if (ch === 'V') out.push('v');
+  }
+  editRule = out; renderChips();
+});
+document.getElementById("addState").onclick = () => { editRule.push('R'); syncFromEdit(); };
+document.getElementById("applyRule").onclick = () => {
+  if (editRule.length < 2) return;
+  loadRule(editRule.slice());
+};
+function loadRule(r) {
+  rule = r.slice(); numStates = rule.length;
+  editRule = rule.slice(); syncFromEdit();
+  resetSim();
+}
+document.getElementById("ruleBtn").onclick = (e) => {
+  const open = rulePanel.classList.toggle("open");
+  e.target.classList.toggle("active", open);
+  if (open) { searchPanel.classList.remove("open"); searchBtn.classList.remove("active"); editRule = rule.slice(); syncFromEdit(); }
+};
+
+/* ============================ evolutionary search ============================ */
+// headless evaluation on a large bounded grid; scores sustained symmetry.
+// Runs are sliced across ticks so a 1,000,000-step candidate never blocks the UI.
+const EV = { MAX: 1000000, SAMPLE: 50000, GRACE: 200000, CONTREP: 0.15, MINCOV: 1500 };
+// eval arena mirrors the on-screen world, so boundary hits are part of the result
+// and the best rules genuinely differ with the window size the app was opened at.
+let EW = 0, EH = 0, evalGrid = null, thumbGrid = null;
+function ensureEvalGrids() {
+  if (evalGrid && EW === COLS && EH === ROWS) return;
+  EW = COLS; EH = ROWS;
+  evalGrid = new Uint8Array(EW * EH);   // in-progress evaluation
+  thumbGrid = new Uint8Array(EW * EH);  // preview drawing
+}
+const REL = ['L', 'R', 'N'];
+const ABS = ['^', '>', 'v', '<'];
+let maxStates = 5;
+
+function relCount(r) { let n = 0; for (const c of r) if (c === 'L' || c === 'R' || c === 'N') n++; return n; }
+function valid(r) { return relCount(r) >= 3; }               // must have >=3 relative turns
+function dirBonus(r) {                                        // reward fewer absolute directions
+  let a = 0; for (const c of r) if (c === '^' || c === 'v' || c === '<' || c === '>') a++;
+  return Math.round((1 - a / r.length) * 1e7);
+}
+// a rule and its L/R-swapped twin draw mirror images with identical scores;
+// canonicalize so they count as ONE rule everywhere (archive, population).
+const MIR = { L: 'R', R: 'L', '<': '>', '>': '<' };
+function mirrorRule(r) { return r.map(c => MIR[c] || c); }
+function canonKey(r) { const a = r.join(""), b = mirrorRule(r).join(""); return a < b ? a : b; }
+
+// pattern = repetition of TEXTURE. Tiles that are all-empty or all-filled don't count:
+// a solid flood-fill is uniform, not patterned. Repetition of the mixed (textured) tiles,
+// scaled by how much of the shape is texture, rewards crystals/lattices over blobs & noise.
+function patternScore(g, W, H, minx, maxx, miny, maxy) {
+  const stride = Math.max(1, Math.floor(Math.sqrt(((maxx - minx + 1) * (maxy - miny + 1)) / 90000)));
+  const freq = new Map();
+  let mixed = 0, nonEmpty = 0;
+  for (let y = miny; y < maxy; y += stride) {
+    for (let x = minx; x < maxx; x += stride) {
+      let key = 0, ones = 0;
+      for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 3; dx++) {
+        const xx = x + dx, yy = y + dy;
+        const v = (xx < 0 || xx >= W || yy < 0 || yy >= H) ? 0 : (g[yy * W + xx] ? 1 : 0);
+        key = (key << 1) | v; ones += v;
+      }
+      if (ones === 0) continue;
+      nonEmpty++;
+      if (ones === 9) continue;                 // solid interior: uniform, not texture
+      mixed++; freq.set(key, (freq.get(key) || 0) + 1);
+    }
+  }
+  if (mixed < 20 || nonEmpty < 20) return { p: 0, rep: 0, tex: 0 };
+  let ent = 0;
+  for (const c of freq.values()) { const pp = c / mixed; ent -= pp * Math.log2(pp); }
+  const rep = 1 - ent / (Math.log2(Math.min(freq.size, 510)) || 1);  // texture repetition
+  const tex = mixed / nonEmpty;                                       // texture fraction
+  return { p: rep * Math.pow(tex, 0.25), rep, tex };
+}
+// symmetry about the pattern's own bounding-box center:
+// sx = mirror across vertical axis, sy = across horizontal axis, sr = 180° rotation (radial)
+function symScores(g, W, H, minx, maxx, miny, maxy) {
+  const ax = minx + maxx, ay = miny + maxy;
+  const stride = Math.max(1, Math.floor(Math.sqrt(((maxx - minx + 1) * (maxy - miny + 1)) / 120000)));
+  let mX = 0, oX = 0, mY = 0, oY = 0, mR = 0, oR = 0;
+  for (let y = miny; y <= maxy; y += stride) {
+    const row = y * W, ry = ay - y;
+    for (let x = minx; x <= maxx; x += stride) {
+      const a = g[row + x] ? 1 : 0;
+      const bX = g[row + (ax - x)] ? 1 : 0; if (a || bX) { oX++; if (a !== bX) mX++; }
+      const bY = g[ry * W + x] ? 1 : 0;     if (a || bY) { oY++; if (a !== bY) mY++; }
+      const bR = g[ry * W + (ax - x)] ? 1 : 0; if (a || bR) { oR++; if (a !== bR) mR++; }
+    }
+  }
+  return { sx: oX ? 1 - mX / oX : 0, sy: oY ? 1 - mY / oY : 0, sr: oR ? 1 - mR / oR : 0 };
+}
+// combined quality: symmetry AMPLIFIES a real pattern but can't substitute for one
+// box-counting dimension of the occupied cells (box sizes 1..32) + PCA elongation.
+// Empirically calibrated: dense fill/crystal D≈1.95-2.0, chaotic blobs D≈1.8-1.9,
+// thick lines/staircases D≈1.3-1.5, lacy/fractal structure D≈1.4-1.7.
+function boxDim(g, W, minx, maxx, miny, maxy) {
+  const bw = maxx - minx + 1, bh = maxy - miny + 1;
+  if (bw < 48 || bh < 48) return { D: -1, elong: 0 };
+  const sizes = [1, 2, 4, 8, 16, 32], counts = [];
+  let sxp = 0, syp = 0, sxx = 0, syy = 0, sxy = 0, np = 0;   // PCA sums (box-size-1 pass)
+  for (const bs of sizes) {
+    const gw = Math.ceil(bw / bs), gh = Math.ceil(bh / bs);
+    const flags = new Uint8Array(gw * gh); let cnt = 0;
+    for (let y = miny; y <= maxy; y++) {
+      const row = y * W, by = ((y - miny) / bs) | 0;
+      for (let x = minx; x <= maxx; x++) {
+        if (!g[row + x]) continue;
+        if (bs === 1) { const px = x - minx, py = y - miny; sxp += px; syp += py; sxx += px * px; syy += py * py; sxy += px * py; np++; }
+        const idx = by * gw + (((x - minx) / bs) | 0);
+        if (!flags[idx]) { flags[idx] = 1; cnt++; }
+      }
+    }
+    counts.push(cnt);
+  }
+  const xs = sizes.map(s => -Math.log2(s)), ys = counts.map(c => Math.log2(Math.max(1, c)));
+  const n = xs.length, sX = xs.reduce((a, b) => a + b, 0), sY = ys.reduce((a, b) => a + b, 0);
+  const sXX = xs.reduce((a, b) => a + b * b, 0), sXY = xs.reduce((a, b, i) => a + b * ys[i], 0);
+  const D = (n * sXY - sX * sY) / (n * sXX - sX * sX);
+  // elongation: sqrt of minor/major covariance eigenvalue ratio; ~0 for a line, ~1 for 2D spread
+  let elong = 0;
+  if (np > 2) {
+    const mx = sxp / np, my = syp / np;
+    const cxx = sxx / np - mx * mx, cyy = syy / np - my * my, cxy = sxy / np - mx * my;
+    const tr = cxx + cyy, det = cxx * cyy - cxy * cxy;
+    const disc = Math.sqrt(Math.max(0, tr * tr / 4 - det));
+    const l1 = tr / 2 + disc, l2 = Math.max(0, tr / 2 - disc);
+    elong = l1 > 0 ? Math.sqrt(l2 / l1) : 0;
+  }
+  return { D, elong };
+}
+// calibrated fractal band: 0 below D=1.05, full credit 1.25-1.65, 0 again by 1.80
+function bandScore(D) {
+  if (D <= 1.05 || D >= 1.80) return 0;
+  if (D < 1.25) return (D - 1.05) / 0.20;
+  if (D <= 1.65) return 1;
+  return (1.80 - D) / 0.15;
+}
+// instantaneous quality: texture is the base; the fractal band is the big multiplier
+// (x2.5 swing), 2D spread and symmetry are mild multipliers.
+function qualityOf(ps, geo, sy) {
+  const sym = Math.max(sy.sx, sy.sy, sy.sr);
+  const band = geo.D < 0 ? 0 : bandScore(geo.D);
+  const spread = 0.70 + 0.30 * Math.min(1, geo.elong / 0.35);
+  return { q: ps.p * (0.40 + 0.60 * band) * spread * (0.80 + 0.20 * sym), sym, band };
+}
+
+
+// ---- resumable evaluation: one candidate's run is spread over many ticks ----
+let curEval = null;
+function startEval(r) {
+  ensureEvalGrids();
+  const W = EW, H = EH, cx = W >> 1, cy = H >> 1;
+  evalGrid.fill(0);
+  curEval = {
+    r, N: r.length, W, H,
+    x: cx, y: cy, d: 0, cov: 0,
+    minx: cx, maxx: cx, miny: cy, maxy: cy,
+    s: 0, q: 0, at: 0, sym: 0, D: 0, first: -1, ball: 0,
+    ring: [],                                  // ant positions every 5k steps (highway detector)
+    result: null
+  };
+}
+function sampleQuality(e, updatePeak) {
+  const g = evalGrid;
+  const ps = patternScore(g, e.W, e.H, e.minx, e.maxx, e.miny, e.maxy);
+  const geo = boxDim(g, e.W, e.minx, e.maxx, e.miny, e.maxy);
+  const { q, sym } = qualityOf(ps, geo, symScores(g, e.W, e.H, e.minx, e.maxx, e.miny, e.maxy));
+  if (e.first < 0) e.first = q;
+  if (updatePeak && e.cov >= EV.MINCOV && q > e.q) { e.q = q; e.at = e.s; e.sym = sym; e.D = geo.D; }
+  return ps;
+}
+function finishEval() {
+  const e = curEval;
+  sampleQuality(e, true);                       // final scan: score the terminal state too
+  // emergence: how much better the peak is than the first look (order that EMERGED),
+  // plus a bonus if the ant ever locked into ballistic (highway-style) motion.
+  const emerge = Math.min(1, Math.max(0, (e.q - Math.max(0, e.first)) / 0.25));
+  const Q = e.q * (1 + 0.25 * emerge + 0.15 * e.ball);
+  const fit = (e.cov < EV.MINCOV && Q === 0)
+    ? e.cov
+    : Math.round(Q * 1e9) + dirBonus(e.r) + Math.min(e.cov, 999999);
+  e.result = { fit, q: Q, at: e.at, sym: e.sym, D: e.D, em: emerge, ball: e.ball, cov: e.cov };
+}
+function advanceEval(maxChunk) {
+  const e = curEval, g = evalGrid, W = e.W, H = e.H, N = e.N, r = e.r;
+  let x = e.x, y = e.y, d = e.d, cov = e.cov, s = e.s;
+  let minx = e.minx, maxx = e.maxx, miny = e.miny, maxy = e.maxy;
+  let done = false, sampled = false, n = 0;
+  while (n < maxChunk) {
+    if (s >= EV.MAX) { done = true; break; }
+    const i = y * W + x, c = g[i];
+    d = turn(d, r[c]);
+    const nx = (c + 1) % N;
+    if (c === 0) { if (nx !== 0) cov++; } else if (nx === 0) cov--;
+    g[i] = nx;
+    x += DX[d]; y += DY[d]; s++; n++;
+    if (x < 0 || x >= W || y < 0 || y >= H) { done = true; break; } // hit the screen edge
+    if (x < minx) minx = x; else if (x > maxx) maxx = x;
+    if (y < miny) miny = y; else if (y > maxy) maxy = y;
+    if (s % 5000 === 0) {                       // ballistic (highway) detector
+      e.ring.push(x, y);
+      if (e.ring.length > 14) e.ring.splice(0, 2);
+      if (e.ring.length === 14) {
+        const dx = x - e.ring[0], dy = y - e.ring[1];
+        if (Math.sqrt(dx * dx + dy * dy) / 30000 > 0.02) e.ball = 1;
+      }
+    }
+    if (s % EV.SAMPLE === 0) { sampled = true; break; }
+  }
+  e.x = x; e.y = y; e.d = d; e.cov = cov; e.s = s;
+  e.minx = minx; e.maxx = maxx; e.miny = miny; e.maxy = maxy;
+  if (sampled && !done) {
+    const ps = sampleQuality(e, true);
+    // grace period: chaos is allowed early (order may EMERGE); after it, texture must exist
+    if (s >= EV.GRACE && ps.rep < EV.CONTREP) done = true;
+  }
+  if (done) finishEval();
+}
+
+// GA state
+let searchOn = false, population = [], gen = 0, evalIdx = 0, evalsDone = 0;
+let best = null;
+const archive = new Map();
+let discovery = 0;
+const POP = 24;
+
+function rndSym() { return ALPHA[(Math.random() * ALPHA.length) | 0]; }
+function rndBiasSym() { return Math.random() < 0.75 ? REL[(Math.random() * 3) | 0] : ABS[(Math.random() * 4) | 0]; }
+function rndInt(n) { return (Math.random() * n) | 0; }
+function ensureValid(r) {                                     // nudge a rule to have >=3 relative turns
+  r = r.slice();
+  while (r.length < 3) r.push(REL[rndInt(3)]);
+  for (let i = 0; i < r.length && !valid(r); i++) {
+    if (!(r[i] === 'L' || r[i] === 'R' || r[i] === 'N')) r[i] = REL[rndInt(3)];
+  }
+  return r;
+}
+function randomRule() {
+  const len = 3 + rndInt(maxStates - 2);
+  let r; do { r = []; for (let i = 0; i < len; i++) r.push(rndBiasSym()); } while (!valid(r));
+  return r;
+}
+function mutate(r) {
+  r = r.slice();
+  const edits = 1 + rndInt(3);                 // 1-3 edits: this landscape needs big jumps
+  for (let k = 0; k < edits; k++) {
+    const roll = Math.random();
+    if (roll < 0.15 && r.length < maxStates) r.splice(rndInt(r.length + 1), 0, rndBiasSym());
+    else if (roll < 0.30 && r.length > 3) r.splice(rndInt(r.length), 1);
+    else r[rndInt(r.length)] = rndBiasSym();
+  }
+  return ensureValid(r);
+}
+function crossover(a, b) {
+  let r = a.slice(0, 1 + rndInt(a.length - 1)).concat(b.slice(1 + rndInt(b.length - 1)));
+  if (r.length > maxStates) r = r.slice(0, maxStates);
+  return ensureValid(r);
+}
+function tournament() {
+  let bst = population[rndInt(population.length)];
+  for (let k = 0; k < 2; k++) { const c = population[rndInt(population.length)]; if (c.fit > bst.fit) bst = c; }
+  return bst;
+}
+function seedPopulation() {
+  const seeds = [['R', 'R', 'L', 'L'], ['R', 'L', 'R'], ['L', 'R', 'R', 'R', 'R', 'L', 'L', 'R'], ['L', 'L', 'R', 'R', 'L']];
+  if (valid(rule)) seeds.unshift(rule.slice());
+  population = seeds.map(r => r.slice(0, maxStates)).filter(valid).map(r => ({ rule: r }));
+  while (population.length < POP) population.push({ rule: randomRule() });
+  gen = 0; evalIdx = 0; curEval = null;
+}
+const ELITE_KEEP = 3;
+function nextGeneration() {
+  population.sort((p, q) => q.fit - p.fit);
+  const next = [];
+  const seen = new Set();
+  for (let i = 0; i < ELITE_KEEP && i < population.length; i++) {
+    const p = population[i];
+    if (seen.has(canonKey(p.rule))) continue;               // mirror twins: keep one elite slot
+    next.push({ rule: p.rule.slice(), fit: p.fit, q: p.q, at: p.at, sym: p.sym, D: p.D, ch: p.ch, em: p.em, ball: p.ball, cov: p.cov });
+    seen.add(canonKey(p.rule));
+  }
+  // Turmite rule space is nearly gradient-free: one symbol change usually swaps the whole
+  // pattern, so breeding barely helps. Mix: ~50% pure random, ~25% mutants of random
+  // hall-of-fame entries (diverse parents), small crossover remnant.
+  while (next.length < POP) {
+    const roll = Math.random();
+    let childRule;
+    if (roll < 0.50) childRule = randomRule();                          // pure exploration
+    else if (roll < 0.75) childRule = mutate(randomEliteRule());        // mutate a random NICHE champion
+    else {
+      const pa = tournament(), pb = tournament();
+      childRule = mutate(Math.random() < 0.7 ? crossover(pa.rule, pb.rule) : pa.rule.slice());
+    }
+    if (seen.has(canonKey(childRule))) childRule = randomRule(); // avoid clone/mirror pile-up
+    seen.add(canonKey(childRule));
+    next.push({ rule: childRule });
+  }
+  population = next; gen++; evalIdx = 0;
+  renderTopList();
+}
+function recordArchive(cand) {
+  if (cand.fit === undefined || cand.q === undefined || cand.q <= 0) return;
+  const key = canonKey(cand.rule);          // a rule and its mirror are ONE archive entry
+  const cur = archive.get(key);
+  if (!cur || cand.fit > cur.fit) archive.set(key, { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, found: discovery++ });
+  if (archive.size > 400) {                 // prune: keep the best 200 ever
+    const keep = [...archive.values()].sort((a, b) => b.fit - a.fit).slice(0, 200);
+    archive.clear();
+    for (const e of keep) archive.set(canonKey(e.rule), e);
+  }
+  placeInMap(cand);
+}
+
+/* ---- MAP-Elites: a niche grid over (fractal dimension x symmetry). Each niche keeps
+   its own champion, so different KINDS of pattern can't crowd each other out. ---- */
+const MAP_COLS = 10, MAP_ROWS = 6;          // D 1.0->2.0 across, symmetry 0->1 down
+const eliteMap = new Map();                 // "col,row" -> best entry in that niche
+let mapDirty = false;
+function nicheOf(e) {
+  if (!(e.D > 1.0) || e.D >= 2.0 || e.cov < EV.MINCOV) return null;
+  const col = Math.min(MAP_COLS - 1, Math.floor((e.D - 1.0) * MAP_COLS));
+  const row = Math.min(MAP_ROWS - 1, Math.floor(e.sym * MAP_ROWS));
+  return col + "," + row;
+}
+function placeInMap(cand) {
+  const key = nicheOf(cand);
+  if (!key) return;
+  const cur = eliteMap.get(key);
+  if (!cur || cand.q > cur.q) {
+    eliteMap.set(key, { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, found: discovery });
+    mapDirty = true;
+  }
+}
+function randomEliteRule() {
+  const vals = [...eliteMap.values()];
+  if (vals.length) return vals[rndInt(vals.length)].rule;   // uniform across NICHES
+  const arch = [...archive.values()];
+  return arch.length ? arch[rndInt(arch.length)].rule : randomRule();
+}
+
+function searchTick() {
+  if (!searchOn) return;
+  const t0 = performance.now();
+  while (performance.now() - t0 < 12) {
+    if (evalIdx >= population.length) { nextGeneration(); break; }
+    const cand = population[evalIdx];
+    if (cand.fit !== undefined) { evalIdx++; continue; }   // elite: already scored
+    if (!valid(cand.rule)) {                               // reject without simulating
+      cand.fit = -1; cand.q = 0; cand.at = 0; cand.sym = 0; cand.D = 0; cand.ch = 0; cand.em = 0; cand.ball = 0; cand.cov = 0; curEval = null; evalIdx++; continue;
+    }
+    if (!curEval || curEval.r !== cand.rule) startEval(cand.rule);
+    advanceEval(EV.SAMPLE);                                // ~one inter-sample segment
+    if (curEval.result) {
+      const res = curEval.result;
+      cand.fit = res.fit; cand.q = res.q; cand.at = res.at; cand.sym = res.sym; cand.D = res.D; cand.ch = res.ch; cand.em = res.em; cand.ball = res.ball; cand.cov = res.cov;
+      evalsDone++;
+      recordArchive(cand);                                 // EVERY scored rule competes for the board
+      renderTopList();                                     // cheap: skips if top-6 unchanged
+      renderEliteMap();                                    // cheap: skips if map unchanged
+      if ((!best || cand.fit > best.fit) && cand.q > 0) {
+        best = { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov };
+        onNewBest();
+      }
+      curEval = null; evalIdx++;
+    }
+  }
+  updateSearchStats();
+  setTimeout(searchTick, 0);
+}
+
+/* ---- search UI ---- */
+const searchPanel = document.getElementById("searchPanel");
+const searchBtn = document.getElementById("searchBtn");
+const thumb = document.getElementById("thumb");
+const tctx = thumb.getContext("2d");
+
+// leaderboard state + one-time delegated click handler on the persistent container,
+// so clicks work even while rows are being rebuilt by the running search.
+const topListEl = document.getElementById("topList");
+let topEntries = [], topSig = "";
+topListEl.addEventListener("click", (ev) => {
+  const row = ev.target.closest(".toprow");
+  if (!row || !topListEl.contains(row)) return;
+  const e = topEntries[+row.dataset.idx];
+  if (!e) return;
+  following = false;                        // stop auto-following the best
+  showEntry(e);
+});
+
+let selected = null, following = true;      // panel preview follows best until a row is clicked
+const THUMB_MAX = 300000;                    // cap preview sim so clicks stay responsive
+
+function metaText(e) {
+  return "score " + (e.q * 100).toFixed(1) + " \u00b7 D " + (e.D > 0 ? e.D.toFixed(2) : "\u2013") +
+    " \u00b7 sym " + Math.round(e.sym * 100) + "%" +
+    (e.ch !== undefined ? " \u00b7 color " + Math.round(e.ch * 100) + "%" : "") +
+    (e.em > 0.05 ? " \u00b7 emerged +" + Math.round(e.em * 100) + "%" : "") +
+    (e.ball ? " \u00b7 highway" : "") +
+    " \u00b7 peak at " + e.at.toLocaleString() + " \u00b7 " + e.cov.toLocaleString() + " cells";
+}
+function showEntry(e) {
+  selected = e.rule.slice();
+  document.getElementById("bestRule").textContent = e.rule.join("");
+  document.getElementById("bestMeta").textContent = metaText(e);
+  renderThumb(e.rule);
+}
+function updateSearchStats() {
+  document.getElementById("searchStats").textContent =
+    "generation " + gen + " \u00b7 " + evalsDone.toLocaleString() + " rules tried \u00b7 " +
+    eliteMap.size + "/" + (MAP_COLS * MAP_ROWS) + " niches filled";
+}
+function onNewBest() {
+  recordArchive(best);
+  if (following) showEntry(best);
+  renderTopList();
+}
+function rgbFor(i) {
+  if (i === 0) return [255, 255, 255];
+  if (i === 1) return [0, 0, 0];
+  const h = (((i - 2) * 47) % 360) / 360, s = 0.7, l = 0.5;
+  const q = l + s * Math.min(l, 1 - l), p = 2 * l - q;
+  const hue = (t) => { t = (t + 1) % 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; };
+  return [Math.round(hue(h + 1 / 3) * 255), Math.round(hue(h) * 255), Math.round(hue(h - 1 / 3) * 255)];
+}
+function renderThumb(r) {
+  ensureEvalGrids();
+  const W = EW, H = EH, N = r.length, g = thumbGrid;
+  g.fill(0);
+  const cx = W >> 1, cy = H >> 1;
+  let x = cx, y = cy, d = 0, minx = cx, maxx = cx, miny = cy, maxy = cy;
+  for (let s = 1; s <= THUMB_MAX; s++) {
+    const i = y * W + x, c = g[i];
+    d = turn(d, r[c]); g[i] = (c + 1) % N;
+    x += DX[d]; y += DY[d];
+    if (x < 0 || x >= W || y < 0 || y >= H) break;
+    if (x < minx) minx = x; else if (x > maxx) maxx = x;
+    if (y < miny) miny = y; else if (y > maxy) maxy = y;
+  }
+  const w = maxx - minx + 1, h = maxy - miny + 1;
+  const off = document.createElement("canvas"); off.width = w; off.height = h;
+  const octx = off.getContext("2d");
+  const img = octx.createImageData(w, h), data = img.data;
+  data.fill(255);                                   // white background
+  for (let yy = miny; yy <= maxy; yy++) {
+    const row = yy * W, orow = (yy - miny) * w;
+    for (let xx = minx; xx <= maxx; xx++) {
+      const v = g[row + xx];
+      if (!v) continue;
+      const [rr, gg, bb] = rgbFor(v), p = (orow + (xx - minx)) * 4;
+      data[p] = rr; data[p + 1] = gg; data[p + 2] = bb;
+    }
+  }
+  octx.putImageData(img, 0, 0);
+  tctx.fillStyle = "#fff"; tctx.fillRect(0, 0, thumb.width, thumb.height);
+  const sc = Math.min((thumb.width - 6) / w, (thumb.height - 6) / h);
+  const dw = w * sc, dh = h * sc;
+  tctx.imageSmoothingEnabled = false;
+  tctx.drawImage(off, (thumb.width - dw) / 2, (thumb.height - dh) / 2, dw, dh);
+}
+// species map UI: one cell per niche; brightness = that champion's score
+const eliteMapEl = document.getElementById("eliteMap");
+const nicheCells = [];
+for (let r = 0; r < MAP_ROWS; r++) for (let c = 0; c < MAP_COLS; c++) {
+  const d = document.createElement("div");
+  d.className = "niche"; d.dataset.key = c + "," + r;
+  eliteMapEl.append(d); nicheCells.push(d);
+}
+let selNiche = null;
+eliteMapEl.addEventListener("click", (ev) => {
+  const cell = ev.target.closest(".niche");
+  if (!cell) return;
+  const e = eliteMap.get(cell.dataset.key);
+  if (!e) return;
+  following = false;
+  selNiche = cell.dataset.key;
+  showEntry(e);
+  renderEliteMap(true);
+});
+function renderEliteMap(force) {
+  if (!mapDirty && !force) return;
+  mapDirty = false;
+  let qmax = 0;
+  for (const e of eliteMap.values()) if (e.q > qmax) qmax = e.q;
+  for (const cell of nicheCells) {
+    const e = eliteMap.get(cell.dataset.key);
+    if (!e) { cell.className = "niche"; cell.style.background = ""; cell.title = ""; continue; }
+    cell.className = "niche occ" + (cell.dataset.key === selNiche ? " sel" : "");
+    const lum = 18 + 42 * (qmax ? e.q / qmax : 0);
+    cell.style.background = "hsl(158, 55%, " + lum.toFixed(0) + "%)";
+    cell.title = e.rule.join("") + "  \u00b7  score " + (e.q * 100).toFixed(1) + "  \u00b7  D " + e.D.toFixed(2) + "  \u00b7  sym " + Math.round(e.sym * 100) + "%";
+  }
+}
+function renderTopList() {
+  // near-equal scores (within ~0.7%) count as tied, newest first: fresh finds stay visible
+  const top = [...archive.values()]
+    .sort((a, b) => (Math.round(b.q * 150) - Math.round(a.q * 150)) || (b.found - a.found))
+    .slice(0, 6);
+  const sig = top.map(e => e.rule.join("") + ":" + e.fit).join("|");
+  if (sig === topSig) return;               // unchanged -> don't churn the DOM (which eats clicks)
+  topSig = sig; topEntries = top;
+  topListEl.innerHTML = "";
+  top.forEach((e, i) => {
+    const row = document.createElement("div");
+    row.className = "toprow"; row.dataset.idx = i;
+    const r = document.createElement("span"); r.className = "r"; r.textContent = e.rule.join("");
+    const s = document.createElement("span"); s.className = "s"; s.textContent = (e.q * 100).toFixed(1) + " / " + e.cov.toLocaleString();
+    row.append(r, s);
+    topListEl.append(row);
+  });
+}
+
+document.getElementById("searchToggle").onclick = (e) => {
+  searchOn = !searchOn;
+  e.target.textContent = searchOn ? "Stop" : "Start";
+  if (searchOn) {
+    if (population.length === 0) seedPopulation();
+    setTimeout(searchTick, 0);
+  }
+};
+document.getElementById("maxStatesR").oninput = (e) => {
+  maxStates = +e.target.value;
+  document.getElementById("maxStatesL").textContent = maxStates;
+};
+document.getElementById("loadBest").onclick = () => { if (selected) loadRule(selected); };
+searchBtn.onclick = (e) => {
+  const open = searchPanel.classList.toggle("open");
+  e.target.classList.toggle("active", open);
+  if (open) { rulePanel.classList.remove("open"); document.getElementById("ruleBtn").classList.remove("active"); }
+};
+
+/* ============================ controls ============================ */
+document.getElementById("toggle").onclick = (e) => { running = !running; e.target.textContent = running ? "Pause" : "Run"; };
+document.getElementById("reset").onclick = resetSim;
+document.getElementById("fit").onclick = fitView;
+document.getElementById("zoomIn").onclick = () => zoomAt(canvas.width / 2, canvas.height / 2, 1.3);
+document.getElementById("zoomOut").onclick = () => zoomAt(canvas.width / 2, canvas.height / 2, 1 / 1.3);
+document.getElementById("speed").oninput = (e) => { stepsPerFrame = +e.target.value; };
+document.getElementById("paintBtn").onclick = (e) => {
+  paintMode = paintMode === "state" ? "strata" : "state";
+  e.target.textContent = "Paint: " + paintMode;      // affects cells painted from now on
+};
+document.getElementById("antsBtn").onclick = (e) => {
+  antCount = antCount === 1 ? 2 : antCount === 2 ? 4 : 1;
+  e.target.textContent = "Ants: " + antCount;
+  resetSim();
+};
+document.getElementById("pngBtn").onclick = () => {
+  const a = document.createElement("a");
+  a.download = "turmite-" + rule.join("") + "-" + stepCount + ".png";
+  a.href = canvas.toDataURL("image/png");
+  a.click();
+};
+document.getElementById("shareBtn").onclick = (e) => {
+  const h = "r=" + rule.join("") + "&a=" + antCount + "&p=" + paintMode;
+  const url = location.href.split("#")[0] + "#" + h;
+  try { history.replaceState(null, "", "#" + h); } catch (_) {}   // sandboxed iframes forbid this
+  const done = () => { e.target.textContent = "Copied!"; setTimeout(() => e.target.textContent = "Share", 1200); };
+  if (navigator.clipboard && navigator.clipboard.writeText)
+    navigator.clipboard.writeText(url).then(done, () => prompt("Copy this link:", url));
+  else prompt("Copy this link:", url);
+};
+// load a shared config from the URL hash, e.g. #r=LRRL&a=2&p=strata
+(function loadHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  const r = (h.get("r") || "").toUpperCase().split("").map(c => c === 'V' ? 'v' : c).filter(c => "LRN^v<>".includes(c));
+  if (r.length >= 2) { rule = r; numStates = r.length; }
+  const a = +h.get("a");
+  if (a === 2 || a === 4) { antCount = a; document.getElementById("antsBtn").textContent = "Ants: " + a; }
+  if (h.get("p") === "strata") { paintMode = "strata"; document.getElementById("paintBtn").textContent = "Paint: strata"; }
+})();
+window.addEventListener("resize", resizeView);
+
+resizeView();
+resetSim();
+loop();
+</script>
+
+<script>
+/* ============================================================================
+   MIND TEMPLE shell: router, status bar, oracle, and the two other engines.
+   ============================================================================ */
+
+/* ---------------- router ---------------- */
+const VIEWS = { home: "homeView", turmite: "turmiteView", t3d: "t3View", eca: "ecaView", lights: "loView" };
+const STATUS = {
+  home:    "MIND TEMPLE v1.0  \u2014  pick an engine. The evolve search, once started, keeps computing in every room.",
+  turmite: "TURMITE LAB  \u2014  drag to pan, wheel to zoom. [Rule] edits the law; [Evolve] breeds a zoo of order.",
+  t3d: "TURMITE 3D  \u2014  drag to orbit, shift-drag to pan, wheel to zoom. A walker with a frame in a 10,000\u00b3 torus.",
+  eca:     "RULE SCROLLS  \u2014  256 possible one-dimensional laws. Type a number 0..255 or walk the famous ones.",
+  lights:  "LIGHTS OUT  \u2014  each press flips a cross. Parity is truth: order of presses never matters."
+};
+window.MT_VIEW = "home";
+function showView(name) {
+  window.MT_VIEW = name;
+  for (const [k, id] of Object.entries(VIEWS))
+    document.getElementById(id).classList.toggle("on", k === name);
+  document.querySelectorAll("#menubar .mbtn[data-view]").forEach(b =>
+    b.classList.toggle("cur", b.dataset.view === name));
+  document.getElementById("statusText").textContent = STATUS[name];
+  if (name === "eca") ecaEnsure();
+}
+document.querySelectorAll("[data-view]").forEach(el =>
+  el.addEventListener("click", () => showView(el.dataset.view)));
+
+/* ---------------- oracle: three words from the well ---------------- */
+const WELL = ("lattice ant mirror silence entropy seed lamp temple gradient recursion glass "
+  + "hymn boundary spiral proof pilgrim rule scroll ember machine chorus fixed-point flood "
+  + "beacon parity crystal desert wanderer oracle window fractal covenant tape symbol clock "
+  + "garden thunder census loom anvil harvest signal salt archway compass furnace meridian "
+  + "quiet ladder honey stone river ash circuit dawn").trim().split(/\s+/);
+const VGA = ["var(--blu)","var(--grn)","var(--red)","var(--mag)","var(--brn)","var(--cyn)"];
+function drawOracle() {
+  const out = document.getElementById("oracleOut");
+  const picks = [];
+  for (let i = 0; i < 3; i++) picks.push(WELL[(Math.random() * WELL.length) | 0]);
+  const line = document.createElement("div");
+  line.append(Object.assign(document.createElement("span"),
+    { textContent: "\u00bb ", style: "color:var(--dgy)" }));
+  picks.forEach((w, i) => {
+    const sp = document.createElement("span");
+    sp.className = "w"; sp.textContent = w;
+    sp.style.color = VGA[(Math.random() * VGA.length) | 0];
+    line.append(sp, document.createTextNode(i < 2 ? "  " : ""));
+  });
+  out.prepend(line);
+  while (out.children.length > 5) out.lastChild.remove();
+  if (window.MT_VIEW !== "home") showView("home");
+}
+document.getElementById("oracleBtn").onclick = drawOracle;
+document.getElementById("oracleBtn2").onclick = drawOracle;
+
+/* ---------------- RULE SCROLLS: elementary cellular automata ---------------- */
+const ecaCanvas = document.getElementById("ecaCanvas");
+const ectx = ecaCanvas.getContext("2d");
+const ECA_CELL = 3;
+let ecaRule = 30, ecaTable = [], ecaRow = null, ecaCols = 0, ecaY = 0;
+let ecaRunning = true, ecaRowsPerFrame = 4, ecaSeedSingle = true, ecaInit = false;
+const ECA_NAMES = { 30: "chaos / randomness", 54: "gliders in lace", 90: "Sierpinski weave",
+  110: "Turing-complete", 184: "traffic flow", 250: "checker flood", 150: "XOR trinity", 22: "one-armed lace" };
+function ecaSetRule(n) {
+  ecaRule = ((n % 256) + 256) % 256;
+  ecaTable = []; for (let i = 0; i < 8; i++) ecaTable.push((ecaRule >> i) & 1);
+  document.getElementById("ecaRuleNum").value = ecaRule;
+  document.getElementById("ecaName").textContent = ECA_NAMES[ecaRule] || "";
+  updateLawUI();
+}
+/* the law, drawn as Wolfram draws it: neighborhoods 111..000 with clickable outputs */
+const lawItemsEl = document.getElementById("lawItems");
+const lawOutEls = [];
+for (let k = 7; k >= 0; k--) {              // display MSB (111) on the left
+  const item = document.createElement("span"); item.className = "lawItem";
+  item.title = "neighborhood " + ((k >> 2) & 1) + ((k >> 1) & 1) + (k & 1);
+  const top = document.createElement("span"); top.className = "lawTop";
+  for (const bit of [(k >> 2) & 1, (k >> 1) & 1, k & 1]) {
+    const c = document.createElement("span");
+    c.className = "lawCell" + (bit ? " on" : "");
+    top.append(c);
+  }
+  const out = document.createElement("span");
+  out.className = "lawOut"; out.dataset.bit = k;
+  out.onclick = () => { ecaSetRule(ecaRule ^ (1 << k)); };   // LIVE: no restart
+  item.append(top, out);
+  lawItemsEl.append(item);
+  lawOutEls[k] = out;
+}
+function updateLawUI() {
+  for (let k = 0; k < 8; k++) lawOutEls[k].classList.toggle("on", !!((ecaRule >> k) & 1));
+}
+function ecaSize() {
+  const bar = document.getElementById("ecaBar").offsetHeight
+            + document.getElementById("ecaLaw").offsetHeight;
+  const w = window.innerWidth, h = window.innerHeight - 30 - 24 - bar;
+  ecaCanvas.width = w; ecaCanvas.height = Math.max(60, h);
+  ecaCols = Math.max(8, Math.floor(w / ECA_CELL));
+}
+function ecaRestart() {
+  ecaSize();
+  ecaRow = new Uint8Array(ecaCols);
+  if (ecaSeedSingle) ecaRow[ecaCols >> 1] = 1;
+  else for (let i = 0; i < ecaCols; i++) ecaRow[i] = Math.random() < 0.5 ? 1 : 0;
+  ecaY = 0;
+  ectx.fillStyle = "#FFFFFF";
+  ectx.fillRect(0, 0, ecaCanvas.width, ecaCanvas.height);
+  ecaDrawRow();
+}
+function ecaDrawRow() {
+  const y = ecaY * ECA_CELL;
+  ectx.fillStyle = "#FFFFFF";
+  ectx.fillRect(0, y, ecaCanvas.width, ECA_CELL);
+  ectx.fillStyle = "#000000";
+  for (let i = 0; i < ecaCols; i++)
+    if (ecaRow[i]) ectx.fillRect(i * ECA_CELL, y, ECA_CELL, ECA_CELL);
+}
+function ecaStep() {
+  const next = new Uint8Array(ecaCols);
+  for (let i = 0; i < ecaCols; i++) {
+    const l = ecaRow[(i - 1 + ecaCols) % ecaCols], c = ecaRow[i], r = ecaRow[(i + 1) % ecaCols];
+    next[i] = ecaTable[(l << 2) | (c << 1) | r];
+  }
+  ecaRow = next;
+  const maxRows = Math.floor(ecaCanvas.height / ECA_CELL);
+  if (ecaY + 1 >= maxRows) {          // scroll the scripture upward
+    ectx.drawImage(ecaCanvas, 0, ECA_CELL, ecaCanvas.width, ecaCanvas.height - ECA_CELL,
+                              0, 0,        ecaCanvas.width, ecaCanvas.height - ECA_CELL);
+  } else ecaY++;
+  ecaDrawRow();
+}
+function ecaLoop() {
+  if (window.MT_VIEW === "eca" && ecaRunning && ecaRow)
+    for (let n = 0; n < ecaRowsPerFrame; n++) ecaStep();
+  requestAnimationFrame(ecaLoop);
+}
+function ecaEnsure() { if (!ecaInit) { ecaInit = true; ecaSetRule(30); ecaRestart(); ecaLoop(); } }
+document.getElementById("ecaRuleNum").addEventListener("change", (e) => { ecaSetRule(+e.target.value || 0); ecaRestart(); });
+document.getElementById("ecaRandomRule").onclick = () => { ecaSetRule((Math.random() * 256) | 0); ecaRestart(); };
+document.querySelectorAll(".ecaPreset").forEach(b => b.onclick = () => { ecaSetRule(+b.dataset.r); ecaRestart(); });
+document.getElementById("ecaSeedBtn").onclick = (e) => {
+  ecaSeedSingle = !ecaSeedSingle;
+  e.target.textContent = ecaSeedSingle ? "single" : "random";
+  ecaRestart();
+};
+document.getElementById("ecaRestart").onclick = ecaRestart;
+document.getElementById("ecaPause").onclick = (e) => { ecaRunning = !ecaRunning; e.target.textContent = ecaRunning ? "Pause" : "Run"; };
+document.getElementById("ecaSpeed").oninput = (e) => { ecaRowsPerFrame = +e.target.value; };
+window.addEventListener("resize", () => { if (ecaInit && window.MT_VIEW === "eca") ecaRestart(); });
+
+/* ---------------- LIGHTS OUT (2-D boards and 3-D cubes) ---------------- */
+let loN = 5, loDim = 2, loBoard = null, loMoves = 0, loHintIdx = -1, loDone = false;
+let loDepth = 3, loShowSol = false, loHistory = [];
+let loShowCount = false;   // off by default: the remaining-press count is a perfect-play oracle
+const loGridEl = document.getElementById("loGrid");
+function loCells() { return loDim === 3 ? loN * loN * loN : loN * loN; }
+function loNeighbors(i) {
+  const n = loN, out = [i];
+  if (loDim === 2) {
+    const x = i % n, y = (i / n) | 0;
+    if (x > 0) out.push(i - 1); if (x < n - 1) out.push(i + 1);
+    if (y > 0) out.push(i - n); if (y < n - 1) out.push(i + n);
+  } else {
+    const x = i % n, y = ((i / n) | 0) % n, z = (i / (n * n)) | 0;
+    if (x > 0) out.push(i - 1); if (x < n - 1) out.push(i + 1);
+    if (y > 0) out.push(i - n); if (y < n - 1) out.push(i + n);
+    if (z > 0) out.push(i - n * n); if (z < n - 1) out.push(i + n * n);
+  }
+  return out;
+}
+function loPressCells(i) { for (const j of loNeighbors(i)) loBoard[j] ^= 1; }
+function loNew(n, dim) {
+  loN = n; loDim = dim;
+  loBoard = new Uint8Array(loCells());
+  loGridEl.classList.toggle("cube", dim === 3);
+  loGridEl.innerHTML = "";
+  if (dim === 2) {
+    loGridEl.style.gridTemplateColumns = "repeat(" + n + ", 52px)";
+    for (let i = 0; i < n * n; i++) {
+      const d = document.createElement("div");
+      d.className = "loCell"; d.dataset.i = i;
+      loGridEl.append(d);
+    }
+  } else {
+    loGridEl.style.gridTemplateColumns = "";
+    for (let z = 0; z < n; z++) {
+      const slice = document.createElement("div");
+      slice.className = "loSlice";
+      slice.style.gridTemplateColumns = "repeat(" + n + ", 38px)";
+      const lab = document.createElement("div");
+      lab.className = "sliceLab"; lab.textContent = "z = " + z;
+      slice.append(lab);
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+        const i = (z * n + y) * n + x;
+        const d = document.createElement("div");
+        d.className = "loCell"; d.dataset.i = i;
+        slice.append(d);
+      }
+      loGridEl.append(slice);
+    }
+  }
+  loScramble();
+}
+function loScramble() {
+  const m = loCells();
+  do {
+    loBoard.fill(0);
+    if (loDepth < 0) {                       // Cruel: uniformly random solvable board
+      for (let i = 0; i < m; i++) if (Math.random() < 0.5) loPressCells(i);
+    } else {                                 // depth = exactly this many DISTINCT presses
+      const idx = [...Array(m).keys()];
+      for (let i = m - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [idx[i], idx[j]] = [idx[j], idx[i]]; }
+      for (let i = 0; i < Math.min(loDepth, m); i++) loPressCells(idx[i]);
+    }
+  } while (loBoard.every(v => !v));
+  loMoves = 0; loHintIdx = -1; loDone = false; loShowSol = false; loHistory = [];
+  document.getElementById("loSolveBtn").textContent = "Show solution";
+  document.getElementById("loMsg").textContent = "";
+  loRender();
+}
+/* --- GF(2) solve with null space (mode-agnostic: uses loNeighbors) --- */
+function loSolveFull() {
+  const m = loCells(), A = [];
+  for (let i = 0; i < m; i++) {
+    let mask = 0n;
+    for (const j of loNeighbors(i)) mask |= 1n << BigInt(j);
+    if (loBoard[i]) mask |= 1n << BigInt(m);
+    A.push(mask);
+  }
+  let rank = 0;
+  const pivotOf = new Array(m).fill(-1);
+  for (let col = 0; col < m && rank < m; col++) {
+    let piv = -1;
+    for (let r = rank; r < m; r++) if ((A[r] >> BigInt(col)) & 1n) { piv = r; break; }
+    if (piv < 0) continue;
+    [A[rank], A[piv]] = [A[piv], A[rank]];
+    for (let r = 0; r < m; r++) if (r !== rank && ((A[r] >> BigInt(col)) & 1n)) A[r] ^= A[rank];
+    pivotOf[col] = rank; rank++;
+  }
+  const full = (1n << BigInt(m)) - 1n;
+  for (let r = rank; r < m; r++)
+    if ((A[r] & full) === 0n && ((A[r] >> BigInt(m)) & 1n)) return null;
+  const x0 = new Uint8Array(m);
+  for (let col = 0; col < m; col++) if (pivotOf[col] >= 0) x0[col] = Number((A[pivotOf[col]] >> BigInt(m)) & 1n);
+  const basis = [];
+  for (let f = 0; f < m; f++) {
+    if (pivotOf[f] >= 0) continue;
+    const v = new Uint8Array(m); v[f] = 1;
+    for (let col = 0; col < m; col++) {
+      const r = pivotOf[col];
+      if (r >= 0 && ((A[r] >> BigInt(f)) & 1n)) v[col] = 1;
+    }
+    basis.push(v);
+  }
+  return { x0, basis };
+}
+function loMinSolution() {
+  const sol = loSolveFull();
+  if (!sol) return null;
+  const { x0, basis } = sol, m = loCells();
+  let best = x0, bestC = x0.reduce((a, b) => a + b, 0);
+  const k = Math.min(basis.length, 12);
+  for (let mask = 1; mask < (1 << k); mask++) {
+    const v = x0.slice();
+    for (let b = 0; b < k; b++) if (mask & (1 << b)) for (let i = 0; i < m; i++) v[i] ^= basis[b][i];
+    const c = v.reduce((a, b) => a + b, 0);
+    if (c < bestC) { bestC = c; best = v; }
+  }
+  return best;
+}
+function loRender() {
+  const cells = loGridEl.getElementsByClassName("loCell");
+  const need = loShowSol || loHintIdx >= 0 || (loShowCount && !loDone);
+  const sol = need ? loMinSolution() : null;
+  for (let k = 0; k < cells.length; k++) {
+    const i = +cells[k].dataset.i;
+    cells[k].classList.toggle("lit", !!loBoard[i]);
+    cells[k].classList.toggle("hint", i === loHintIdx);
+    cells[k].classList.toggle("sol", !!(loShowSol && sol && sol[i]));
+  }
+  const lit = loBoard.reduce((a, b) => a + b, 0);
+  let txt = "moves: " + loMoves + "  \u00b7  lit: " + lit;
+  if (loShowCount && !loDone)
+    txt += "  \u00b7  minimum presses remaining: " + (sol ? sol.reduce((a, b) => a + b, 0) : 0);
+  document.getElementById("loStats").textContent = txt;
+}
+loGridEl.addEventListener("click", (ev) => {
+  const cell = ev.target.closest(".loCell");
+  if (!cell || loDone) return;
+  const i = +cell.dataset.i;
+  loHistory.push(i);
+  loPressCells(i);
+  loMoves++; loHintIdx = -1;
+  if (loBoard.every(v => !v)) {
+    loDone = true; loShowSol = false;
+    document.getElementById("loMsg").textContent = "\u2726 THE LIGHTS REST \u2726  solved in " + loMoves + " moves";
+  }
+  loRender();
+});
+document.getElementById("loHint").onclick = () => {
+  if (loDone) return;
+  const x = loMinSolution();
+  if (!x) { document.getElementById("loMsg").textContent = "this board has no solution (shouldn't happen \u2014 tell me!)"; return; }
+  loHintIdx = -1;
+  for (let i = 0; i < x.length; i++) if (x[i]) { loHintIdx = i; break; }
+  loRender();
+};
+document.getElementById("loSolveBtn").onclick = (e) => {
+  if (loDone) return;
+  loShowSol = !loShowSol;
+  e.target.textContent = loShowSol ? "Hide solution" : "Show solution";
+  loRender();
+};
+document.getElementById("loUndo").onclick = () => {
+  if (!loHistory.length) return;
+  loPressCells(loHistory.pop());
+  loMoves = Math.max(0, loMoves - 1);
+  loDone = false; loHintIdx = -1;
+  document.getElementById("loMsg").textContent = "";
+  loRender();
+};
+document.getElementById("loCounter").onclick = (e) => {
+  loShowCount = !loShowCount;
+  e.target.textContent = "Counter: " + (loShowCount ? "on" : "off");
+  loRender();
+};
+document.getElementById("loScramble").onclick = loScramble;
+document.querySelectorAll(".loSize").forEach(b => b.onclick = () => loNew(+b.dataset.n, 2));
+document.querySelectorAll(".loSize3").forEach(b => b.onclick = () => loNew(+b.dataset.n, 3));
+document.querySelectorAll(".loMode").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".loMode").forEach(o => o.classList.toggle("cur", o === b));
+  const three = b.dataset.dim === "3";
+  document.getElementById("loSizes2").style.display = three ? "none" : "";
+  document.getElementById("loSizes3").style.display = three ? "" : "none";
+  loNew(three ? 3 : 5, three ? 3 : 2);
+});
+document.querySelectorAll(".diffBtn").forEach(b => b.onclick = () => {
+  loDepth = +b.dataset.d;
+  document.querySelectorAll(".diffBtn").forEach(o => o.classList.toggle("cur", o === b));
+  loScramble();
+});
+document.querySelector('.diffBtn[data-d="3"]').classList.add("cur");
+loNew(5, 2);
+
+/* ---------------- boot ---------------- */
+(function boot() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  const g = h.get("g");
+  if (g && VIEWS[g]) showView(g);
+  else if (h.get("r")) showView("turmite");     // shared turmite links land in the lab
+  else showView("home");
+})();
+</script>
+
+<script>
+/* ===== TURMITE 3D (merged annex; namespaced) ===== */
+(function(){
+
+"use strict";
+/* ================= world: sparse 10,000^3 cube, coords -5000..+5000 ================= */
+const HALF = 5000, SIDE = 10001;
+const pack = (x, y, z) => (x + HALF) + SIDE * ((y + HALF) + SIDE * (z + HALF));
+function unpack(k) {
+  const x = k % SIDE; const r = (k - x) / SIDE;
+  const y = r % SIDE; const z = (r - y) / SIDE;
+  return [x - HALF, y - HALF, z - HALF];
+}
+function cross(a, b) {
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+}
+/* the walker's frame: F forward, U up. Turns are exact 90-degree frame rotations. */
+function turn3(F, U, ins) {
+  switch (ins) {
+    case 'L': return [cross(U, F), U];
+    case 'R': return [cross(F, U), U];
+    case 'U': return [U.slice(), [-F[0], -F[1], -F[2]]];
+    case 'D': return [[-U[0], -U[1], -U[2]], F.slice()];
+    case 'C': return [F, cross(F, U)];
+    case 'A': return [F, cross(U, F)];
+    default:  return [F, U];
+  }
+}
+const TURNS = "LRUD", ALL = "NLRUDCA";
+function colorFor(i) {
+  if (i === 0) return "#FFFFFF";
+  if (i === 1) return "#000000";
+  return "hsl(" + (((i - 2) * 47) % 360) + ", 70%, 45%)";
+}
+function rgbFor(i) {
+  if (i === 1) return [0, 0, 0];
+  const h = (((i - 2) * 47) % 360) / 360, s2 = 0.7, l = 0.45;
+  const q = l + s2 * Math.min(l, 1 - l), p = 2 * l - q;
+  const hue = (t) => { t = (t + 1) % 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; };
+  return [Math.round(hue(h + 1 / 3) * 255), Math.round(hue(h) * 255), Math.round(hue(h - 1 / 3) * 255)];
+}
+
+/* ================= live simulation ================= */
+let rule = ['R', 'U', 'L', 'D'];
+let numStates = rule.length;
+let world = new Map();                 // packed -> idx*16 + state
+let xs = [], ys = [], zs = [], cs = []; // render point store (cs -1 = erased)
+let ant = null, stepCount = 0, running = true, stepsPerFrame = 400;
+function resetSim() {
+  world = new Map(); xs = []; ys = []; zs = []; cs = [];
+  ant = { x: 0, y: 0, z: 0, F: [1, 0, 0], U: [0, 0, 1] };
+  stepCount = 0;
+  updateLabel();
+}
+const WORLD_CAP = 2000000;                 // V8 Maps die at ~16.7M entries
+function enforceCap() {
+  if (world.size > WORLD_CAP) {              // oldest cells fade from memory
+    let n = (WORLD_CAP / 5) | 0;
+    for (const k of world.keys()) {
+      if (n-- <= 0) break;
+      const v = world.get(k);
+      cs[Math.floor(v / 16)] = -1;
+      world.delete(k);
+    }
+  }
+  if (xs.length > WORLD_CAP * 1.7) {         // compact the render store, reindex
+    const nx = [], ny = [], nz = [], nc = [];
+    for (const [k, v] of world) {
+      const st = v % 16, i = Math.floor(v / 16);
+      world.set(k, nx.length * 16 + st);
+      nx.push(xs[i]); ny.push(ys[i]); nz.push(zs[i]); nc.push(st);
+    }
+    xs = nx; ys = ny; zs = nz; cs = nc;
+  }
+}
+function step() {
+  const a = ant;
+  const k = pack(a.x, a.y, a.z);
+  const v = world.get(k);
+  const c = v === undefined ? 0 : v % 16;
+  let idx = v === undefined ? -1 : Math.floor(v / 16);
+  const t = turn3(a.F, a.U, rule[c]);
+  a.F = t[0]; a.U = t[1];
+  const nx = (c + 1) % numStates;
+  if (nx === 0) {
+    world.delete(k);
+    if (idx >= 0) cs[idx] = -1;
+  } else {
+    if (idx < 0) { idx = xs.length; xs.push(a.x); ys.push(a.y); zs.push(a.z); cs.push(nx); }
+    else cs[idx] = nx;
+    world.set(k, idx * 16 + nx);
+  }
+  a.x += a.F[0]; a.y += a.F[1]; a.z += a.F[2];
+  // the live cube is a 3-torus: walk off one face, reappear on the opposite one
+  if (a.x < -HALF) a.x = HALF; else if (a.x > HALF) a.x = -HALF;
+  if (a.y < -HALF) a.y = HALF; else if (a.y > HALF) a.y = -HALF;
+  if (a.z < -HALF) a.z = HALF; else if (a.z > HALF) a.z = -HALF;
+  stepCount++;
+}
+function updateLabel() {
+  document.getElementById("t3_steps").textContent =
+    "step " + stepCount.toLocaleString() + " \u00b7 (" + ant.x + ", " + ant.y + ", " + ant.z + ")";
+}
+
+/* ================= camera + Desmos-style graph render ================= */
+const canvas = document.getElementById("t3_g");
+const ctx = canvas.getContext("2d");
+let cw = 0, ch = 0, fb = null, fbImg = null, ptsCanvas = null, ptsCtx = null;
+let camYaw = 0.72, camPitch = 0.42, camDist = 120, target = [0, 0, 0], follow = false;
+function resizeView() {
+  cw = canvas.width = window.innerWidth;
+  ch = canvas.height = window.innerHeight;
+  ptsCanvas = document.createElement("canvas"); ptsCanvas.width = cw; ptsCanvas.height = ch;
+  ptsCtx = ptsCanvas.getContext("2d");
+  fbImg = ptsCtx.createImageData(cw, ch);
+  fb = new Uint32Array(fbImg.data.buffer);
+}
+let PR = {};                                    // per-frame projection constants
+function beginProject() {
+  PR.ca = Math.cos(camYaw); PR.sa = Math.sin(camYaw);
+  PR.cb = Math.cos(camPitch); PR.sb = Math.sin(camPitch);
+  PR.f = ch * 1.1; PR.cx = cw / 2, PR.cy = ch / 2;
+}
+function project(px, py, pz) {                   // -> [sx, sy, w] or null if behind
+  const vx = px - target[0], vy = py - target[1], vz = pz - target[2];
+  const x1 = vx * PR.ca - vy * PR.sa;
+  const y1 = vx * PR.sa + vy * PR.ca;
+  const y2 = y1 * PR.cb - vz * PR.sb;
+  const z2 = y1 * PR.sb + vz * PR.cb;
+  const w = camDist + y2;
+  if (w < 1) return null;
+  return [PR.cx + x1 * PR.f / w, PR.cy - z2 * PR.f / w, w];
+}
+const COLORS32 = [];
+for (let i = 0; i < 16; i++) {
+  const [r, g, b] = i === 0 ? [255, 255, 255] : rgbFor(i);
+  COLORS32.push((255 << 24) | (b << 16) | (g << 8) | r);
+}
+function niceStep(range) {
+  const raw = range / 6, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const m = raw / p;
+  return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p;
+}
+function drawAxes() {
+  let ext = 12;
+  for (let i = 0; i < xs.length; i += Math.max(1, xs.length >> 12)) {
+    if (cs[i] < 0) continue;
+    ext = Math.max(ext, Math.abs(xs[i]), Math.abs(ys[i]), Math.abs(zs[i]));
+  }
+  ext = Math.min(HALF, Math.ceil(ext * 1.25));
+  const stp = Math.max(1, Math.round(niceStep(ext * 2)));
+  ctx.lineWidth = 1; ctx.font = "12px monospace";
+  const axes = [
+    [[1, 0, 0], "#AA0000", "x"], [[0, 1, 0], "#00AA00", "y"], [[0, 0, 1], "#0000AA", "z"]
+  ];
+  for (const [d, col, name] of axes) {
+    const a = project(-d[0] * ext, -d[1] * ext, -d[2] * ext);
+    const b = project(d[0] * ext, d[1] * ext, d[2] * ext);
+    if (!a || !b) continue;
+    ctx.strokeStyle = col; ctx.globalAlpha = 0.75;
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = col;
+    ctx.fillText(name, b[0] + 5, b[1] - 5);
+    ctx.fillStyle = "#888888";
+    for (let t = -ext + (ext % stp); t <= ext; t += stp) {
+      if (t === 0) continue;
+      const p = project(d[0] * t, d[1] * t, d[2] * t);
+      if (!p) continue;
+      ctx.fillRect(p[0] - 1.5, p[1] - 1.5, 3, 3);
+      if (stp >= 2 || ext < 30) ctx.fillText(String(t), p[0] + 4, p[1] + 11);
+    }
+  }
+  // origin + arena bounds
+  const o = project(0, 0, 0);
+  if (o) { ctx.fillStyle = "#000"; ctx.fillRect(o[0] - 2, o[1] - 2, 4, 4); }
+  ctx.strokeStyle = "#DDDDDD";
+  const C = [];
+  for (let i = 0; i < 8; i++)
+    C.push(project((i & 1 ? HALF : -HALF), (i & 2 ? HALF : -HALF), (i & 4 ? HALF : -HALF)));
+  const E = [[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
+  for (const [i, j] of E) {
+    if (!C[i] || !C[j]) continue;
+    ctx.beginPath(); ctx.moveTo(C[i][0], C[i][1]); ctx.lineTo(C[j][0], C[j][1]); ctx.stroke();
+  }
+}
+function render() {
+  if (follow && ant) {
+    target[0] += (ant.x - target[0]) * 0.12;
+    target[1] += (ant.y - target[1]) * 0.12;
+    target[2] += (ant.z - target[2]) * 0.12;
+  }
+  beginProject();
+  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, cw, ch);
+  drawAxes();
+  fb.fill(0);
+  const n = xs.length, stride = Math.max(1, Math.ceil(n / 200000));
+  for (let i = 0; i < n; i += stride) {
+    const c = cs[i];
+    if (c < 0) continue;
+    const p = project(xs[i], ys[i], zs[i]);
+    if (!p) continue;
+    const sx = p[0] | 0, sy = p[1] | 0;
+    if (sx < 0 || sx >= cw - 1 || sy < 0 || sy >= ch - 1) continue;
+    const col = COLORS32[c];
+    const o = sy * cw + sx;
+    fb[o] = col; fb[o + 1] = col; fb[o + cw] = col; fb[o + cw + 1] = col;
+  }
+  ptsCtx.putImageData(fbImg, 0, 0);
+  ctx.drawImage(ptsCanvas, 0, 0);
+  if (ant) {
+    const p = project(ant.x, ant.y, ant.z);
+    if (p) {
+      ctx.fillStyle = "#AA0000";
+      ctx.fillRect(p[0] - 3, p[1] - 3, 6, 6);
+      const q = project(ant.x + ant.F[0] * 4, ant.y + ant.F[1] * 4, ant.z + ant.F[2] * 4);
+      if (q) { ctx.strokeStyle = "#AA0000"; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
+    }
+  }
+}
+function fitView() {
+  let n = 0, sx = 0, sy = 0, sz = 0, ext = 8;
+  for (let i = 0; i < xs.length; i++) {
+    if (cs[i] < 0) continue;
+    n++; sx += xs[i]; sy += ys[i]; sz += zs[i];
+  }
+  if (n) { target = [sx / n, sy / n, sz / n]; }
+  else target = [0, 0, 0];
+  for (let i = 0; i < xs.length; i++) {
+    if (cs[i] < 0) continue;
+    ext = Math.max(ext, Math.abs(xs[i] - target[0]), Math.abs(ys[i] - target[1]), Math.abs(zs[i] - target[2]));
+  }
+  camDist = ext * 2.4 + 16;
+}
+/* orbit / pan / zoom */
+let drag = null;
+canvas.addEventListener("mousedown", (e) => {
+  drag = { x: e.clientX, y: e.clientY, pan: e.shiftKey || e.button === 2 };
+  canvas.classList.add("dragging");
+});
+window.addEventListener("mousemove", (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  drag.x = e.clientX; drag.y = e.clientY;
+  if (drag.pan) {
+    const s = camDist / PR.f;
+    target[0] -= (dx * PR.ca) * s; target[1] -= (-dx * PR.sa) * s;
+    target[2] += dy * s * PR.cb;
+    target[1] += dy * s * PR.sb * PR.ca; target[0] += dy * s * PR.sb * PR.sa;
+  } else {
+    camYaw += dx * 0.008;
+    camPitch = Math.max(-1.5, Math.min(1.5, camPitch + dy * 0.008));
+  }
+});
+window.addEventListener("mouseup", () => { drag = null; canvas.classList.remove("dragging"); });
+canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  camDist *= e.deltaY > 0 ? 1.12 : 1 / 1.12;
+  camDist = Math.max(6, Math.min(40000, camDist));
+}, { passive: false });
+
+function loop() {
+  if (window.MT_VIEW && window.MT_VIEW !== "t3d") { requestAnimationFrame(loop); return; }
+  if (running) {
+    for (let i = 0; i < stepsPerFrame; i++) step();
+    enforceCap();
+    updateLabel();
+  }
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* ================= rule validity / generation (shared with evolver) ================= */
+function turnCount(r) { let n = 0; for (const c of r) if (c !== 'N') n++; return n; }
+function valid(r) { return r.length >= 3 && TURNS.includes(r[0]) && turnCount(r) >= 2 && r.some(c => 'UDCA'.includes(c)); }  // N/L/R-only is provably planar
+function rndSym() { return Math.random() < 0.78 ? "NLRUD"[(Math.random() * 5) | 0] : "CA"[(Math.random() * 2) | 0]; }
+function rndInt(n) { return (Math.random() * n) | 0; }
+function ensureValid(r) {
+  r = r.slice();
+  while (r.length < 3) r.push(rndSym());
+  if (!TURNS.includes(r[0])) r[0] = TURNS[rndInt(4)];
+  for (let i = 1; i < r.length && turnCount(r) < 2; i++) if (r[i] === 'N') r[i] = TURNS[rndInt(4)];
+  if (!r.some(c => 'UDCA'.includes(c))) r[1 + rndInt(r.length - 1)] = 'UDCA'[rndInt(4)];
+  return r;
+}
+const MOTIFS = ["LRRRRLLR", "LLRR", "RRLL", "LRLLRRLRL", "RRLRR", "LLLRRRL"];
+function liftedCrystal() {                    // a 2-D triangle-crystal motif, pitched into space
+  let r = MOTIFS[rndInt(MOTIFS.length)].split("");
+  const lifts = 1 + rndInt(2);
+  for (let k = 0; k < lifts; k++) r.splice(rndInt(r.length + 1), 0, "UDCA"[rndInt(4)]);
+  if (r.length > maxStates) r = r.slice(0, maxStates);
+  return ensureValid(r);
+}
+function randomRule() {
+  const roll = Math.random();
+  if (roll < 0.30) { const r = liftedCrystal(); if (valid(r)) return r; }
+  if (roll < 0.50) {                          // palindrome bias: mirror strings, symmetric growth
+    const h = 2 + rndInt(Math.max(1, maxStates >> 1));
+    const half = []; for (let i = 0; i < h; i++) half.push(rndSym());
+    let r = half.concat(half.slice().reverse()).slice(0, maxStates);
+    r = ensureValid(r);
+    if (valid(r)) return r;
+  }
+  const len = 3 + rndInt(maxStates - 2);
+  let r; do { r = []; for (let i = 0; i < len; i++) r.push(rndSym()); r = ensureValid(r); } while (!valid(r));
+  return r;
+}
+/* mirror twins: two reflections generate a 4-element group of equivalent rules */
+const MIR_LR = { L: 'R', R: 'L', C: 'A', A: 'C' };
+const MIR_UD = { U: 'D', D: 'U', C: 'A', A: 'C' };
+function canonKey(r) {
+  const a = r.join("");
+  const b = r.map(c => MIR_LR[c] || c).join("");
+  const c = r.map(ch => MIR_UD[ch] || ch).join("");
+  const d = r.map(ch => MIR_UD[MIR_LR[ch] || ch] || (MIR_LR[ch] || ch)).join("");
+  return [a, b, c, d].sort()[0];
+}
+
+/* ================= evolve: resumable evaluator on the full cube ================= */
+const EV = { MAX: 400000, SAMPLE: 50000, GRACE: 100000, CONTREP: 0.05, MINCOV: 3000 };
+let maxStates = 5;
+let curEval = null;
+function sampleKeys(map, cap) {
+  const stride = Math.max(1, Math.floor(map.size / cap));
+  const out = []; let i = 0;
+  for (const k of map.keys()) { if (i % stride === 0) out.push(k); i++; }
+  return out;
+}
+function patternScore3(map) {
+  // 3x3x3 occupancy windows anchored at occupied cells. Random-walk chaos produces
+  // so many distinct window types that its entropy exceeds the norm cap -> rep <= 0;
+  // repeating structure concentrates on few types -> rep high. (Calibrated head-to-head
+  // against 2x2x2 occupancy and state-aware variants; this separated best by far.)
+  if (map.size < 50) return { p: 0, rep: 0, tex: 0 };
+  const keys = sampleKeys(map, 8000);
+  const freq = new Map();
+  let mixed = 0, anchored = 0;
+  for (const k of keys) {
+    const u = unpack(k), x = u[0], y = u[1], z = u[2];
+    let key = 0, ones = 0;
+    for (let dz = -1; dz < 2; dz++) for (let dy = -1; dy < 2; dy++) for (let dx = -1; dx < 2; dx++) {
+      const v = map.has(pack(x + dx, y + dy, z + dz)) ? 1 : 0;
+      key = key * 2 + v; ones += v;
+    }
+    anchored++;
+    if (ones === 27) continue;
+    mixed++; freq.set(key, (freq.get(key) || 0) + 1);
+  }
+  if (mixed < 20) return { p: 0, rep: 0, tex: 0 };
+  let ent = 0;
+  for (const c of freq.values()) { const pp = c / mixed; ent -= pp * Math.log2(pp); }
+  const rep = Math.max(0, 1 - ent / (Math.log2(Math.min(freq.size, 2000)) || 1));
+  const tex = mixed / anchored;
+  return { p: rep * Math.pow(tex, 0.25), rep, tex };
+}
+function boxDim3(map) {
+  if (map.size < 80) return { D: -1, thick: 0, straight: 0 };
+  const keys = sampleKeys(map, 50000);
+  const sizes = [1, 2, 4, 8, 16, 32], counts = [];
+  let n = 0, mx = 0, my = 0, mz = 0;
+  let cxx = 0, cyy = 0, czz = 0, cxy = 0, cxz = 0, cyz = 0;
+  const pts = [];
+  for (const k of keys) { const u = unpack(k); pts.push(u); n++; mx += u[0]; my += u[1]; mz += u[2]; }
+  mx /= n; my /= n; mz /= n;
+  for (const [x, y, z] of pts) {
+    const a = x - mx, b = y - my, c = z - mz;
+    cxx += a * a; cyy += b * b; czz += c * c; cxy += a * b; cxz += a * c; cyz += b * c;
+  }
+  cxx /= n; cyy /= n; czz /= n; cxy /= n; cxz /= n; cyz /= n;
+  const mul = (v) => [cxx * v[0] + cxy * v[1] + cxz * v[2],
+                      cxy * v[0] + cyy * v[1] + cyz * v[2],
+                      cxz * v[0] + cyz * v[1] + czz * v[2]];
+  const nrm = (v) => { const m = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / m, v[1] / m, v[2] / m]; };
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  let v1 = [1, 0.7, 0.4];
+  for (let it = 0; it < 14; it++) v1 = nrm(mul(v1));
+  const l1 = Math.max(1e-9, dot(v1, mul(v1)));
+  let v2 = [0.3, -1, 0.6];
+  for (let it = 0; it < 14; it++) {          // deflate: keep v2 orthogonal to v1
+    let w = mul(v2);
+    const pr = dot(w, v1);
+    w = [w[0] - pr * v1[0], w[1] - pr * v1[1], w[2] - pr * v1[2]];
+    v2 = nrm(w);
+  }
+  const l2 = Math.max(0, dot(v2, mul(v2)));
+  const l3 = Math.max(0, cxx + cyy + czz - l1 - l2);
+  const thick = Math.sqrt(l3 / l1);          // 0 for ANY flat sheet, however oriented
+  for (const bs of sizes) {
+    const seen = new Set();
+    for (const [x, y, z] of pts) {
+      const fx = Math.floor((x + HALF) / bs), fy = Math.floor((y + HALF) / bs), fz = Math.floor((z + HALF) / bs);
+      seen.add(fx + SIDE * (fy + SIDE * fz));
+    }
+    counts.push(seen.size);
+  }
+  const xsL = sizes.map(s2 => -Math.log2(s2)), ysL = counts.map(c => Math.log2(Math.max(1, c)));
+  const m2 = xsL.length, sX = xsL.reduce((a, b) => a + b, 0), sY = ysL.reduce((a, b) => a + b, 0);
+  const sXX = xsL.reduce((a, b) => a + b * b, 0), sXY = xsL.reduce((a, b, i) => a + b * ysL[i], 0);
+  const D = (m2 * sXY - sX * sY) / (m2 * sXX - sX * sX);
+  let dev = 0;                                // self-similarity: one slope at every octave
+  for (let i = 0; i < counts.length - 1; i++) dev = Math.max(dev, Math.abs((ysL[i] - ysL[i + 1]) - D));
+  const straight = Math.max(0, Math.min(1, 1 - dev / 0.8));
+  return { D, thick, straight };
+}
+function symScore3(map, bb) {
+  if (map.size < 50) return 0;
+  const keys = sampleKeys(map, 15000);
+  const ax = bb[0] + bb[1], ay = bb[2] + bb[3], az = bb[4] + bb[5];
+  const okX = (bb[1] - bb[0]) >= 8, okY = (bb[3] - bb[2]) >= 8, okZ = (bb[5] - bb[4]) >= 8;
+  let mX = 0, mY = 0, mZ = 0, mP = 0;
+  for (const k of keys) {
+    const u = unpack(k), x = u[0], y = u[1], z = u[2];
+    if (okX && map.has(pack(ax - x, y, z))) mX++;
+    if (okY && map.has(pack(x, ay - y, z))) mY++;
+    if (okZ && map.has(pack(x, y, az - z))) mZ++;
+    if (map.has(pack(ax - x, ay - y, az - z))) mP++;
+  }
+  const n = keys.length;
+  return Math.max(okX ? mX / n : 0, okY ? mY / n : 0, okZ ? mZ / n : 0, mP / n);
+}
+function chromaScore(map, N) {
+  if (N <= 2 || map.size < 50) return 0;      // one nonzero state = monochrome
+  const keys = sampleKeys(map, 6000);
+  const cnt = new Map();
+  for (const k of keys) { const v = map.get(k); cnt.set(v, (cnt.get(v) || 0) + 1); }
+  let ent = 0;
+  for (const c of cnt.values()) { const p = c / keys.length; ent -= p * Math.log2(p); }
+  return Math.min(1, ent / Math.log2(N - 1));
+}
+/* calibrated 3-D band: threads/helices (D<=1.5) and space-filling noise (D>=2.95) get nothing */
+function bandScore(D) {
+  // Sierpinski tetrahedron D=2.0, Menger sponge D=2.73: the lace family lives here
+  if (D <= 1.40 || D >= 2.95) return 0;
+  if (D < 1.70) return (D - 1.40) / 0.30;
+  if (D <= 2.70) return 1;
+  return (2.95 - D) / 0.25;
+}
+function qualityOf(ps, geo, sym, chroma) {
+  const band = geo.D < 0 ? 0 : bandScore(geo.D);
+  const thickF = 0.30 + 0.70 * Math.min(1, geo.thick / 0.30);   // flatness forfeits 70%
+  return { q: ps.p * (0.25 + 0.75 * band) * thickF
+            * (0.50 + 0.50 * chroma)                             // monochrome forfeits half
+            * (0.80 + 0.20 * sym) * (0.85 + 0.15 * geo.straight), sym, band, ch: chroma };
+}
+function startEval(r) {
+  curEval = {
+    r, N: r.length, map: new Map(),
+    x: 0, y: 0, z: 0, F: [1, 0, 0], U: [0, 0, 1],
+    bb: [0, 0, 0, 0, 0, 0],
+    s: 0, q: 0, at: 0, sym: 0, D: 0, ch: 0, first: -1, ball: 0, ring: [],
+    a0: 0, a1: 0, a2: 0,                       // moves spent along each axis
+    result: null
+  };
+}
+function sampleQuality(e, updatePeak) {
+  const ps = patternScore3(e.map);
+  const geo = boxDim3(e.map);
+  const sy = symScore3(e.map, e.bb);
+  const r = qualityOf(ps, geo, sy, chromaScore(e.map, e.N));
+  if (e.first < 0) e.first = r.q;
+  if (updatePeak && e.map.size >= EV.MINCOV && r.q > e.q) { e.q = r.q; e.at = e.s; e.sym = r.sym; e.D = geo.D; e.ch = r.ch; }
+  return ps;
+}
+function finishEval() {
+  const e = curEval;
+  sampleQuality(e, true);
+  const minAxis = Math.min(e.a0, e.a1, e.a2) / Math.max(1, e.s);
+  const emerge = Math.min(1, Math.max(0, (e.q - Math.max(0, e.first)) / 0.25));
+  let Q = e.q * (1 + 0.25 * emerge + 0.15 * e.ball);
+  if (minAxis < 0.06) Q = 0;                  // the walker MUST live in all three dimensions
+  const cov = e.map.size;
+  const fit = (cov < EV.MINCOV && Q === 0) ? cov : Math.round(Q * 1e9) + Math.min(cov, 999999);
+  e.result = { fit, q: Q, at: e.at, sym: e.sym, D: e.D, ch: e.ch || 0, em: emerge, ball: e.ball, cov };
+}
+function advanceEval(maxChunk) {
+  const e = curEval, map = e.map, r = e.r, N = e.N, bb = e.bb;
+  let x = e.x, y = e.y, z = e.z, F = e.F, U = e.U, s = e.s;
+  let done = false, sampled = false, n = 0;
+  while (n < maxChunk) {
+    if (s >= EV.MAX) { done = true; break; }
+    const k = pack(x, y, z);
+    const c = map.get(k) || 0;
+    const t = turn3(F, U, r[c]);
+    F = t[0]; U = t[1];
+    const nx = (c + 1) % N;
+    if (nx === 0) map.delete(k); else map.set(k, nx);
+    if (F[0]) e.a0++; else if (F[1]) e.a1++; else e.a2++;
+    x += F[0]; y += F[1]; z += F[2]; s++; n++;
+    if (x < -HALF || x > HALF || y < -HALF || y > HALF || z < -HALF || z > HALF) { done = true; break; }
+    if (x < bb[0]) bb[0] = x; else if (x > bb[1]) bb[1] = x;
+    if (y < bb[2]) bb[2] = y; else if (y > bb[3]) bb[3] = y;
+    if (z < bb[4]) bb[4] = z; else if (z > bb[5]) bb[5] = z;
+    if (s % 5000 === 0) {
+      e.ring.push(x, y, z);
+      if (e.ring.length > 21) e.ring.splice(0, 3);
+      if (e.ring.length === 21) {
+        const dx = x - e.ring[0], dy = y - e.ring[1], dz = z - e.ring[2];
+        if (Math.sqrt(dx * dx + dy * dy + dz * dz) / 30000 > 0.02) e.ball = 1;
+      }
+    }
+    if (s % EV.SAMPLE === 0) { sampled = true; break; }
+  }
+  e.x = x; e.y = y; e.z = z; e.F = F; e.U = U; e.s = s;
+  if (sampled && !done) {
+    const ps = sampleQuality(e, true);
+    const minAxis = Math.min(e.a0, e.a1, e.a2) / s;
+    if (s >= EV.GRACE && (ps.rep < EV.CONTREP || minAxis < 0.03)) done = true;  // cull chaos AND flatland
+  }
+  if (done) finishEval();
+}
+
+/* ================= GA: mostly-random search + MAP-Elites zoo ================= */
+const POP = 24, ELITE_KEEP = 3;
+let population = [], gen = 0, evalIdx = 0, evalsDone = 0, best = null, searchOn = false;
+const archive = new Map();
+let discovery = 0;
+function mutate(r) {
+  r = r.slice();
+  const edits = 1 + rndInt(3);
+  for (let k = 0; k < edits; k++) {
+    const roll = Math.random();
+    if (roll < 0.15 && r.length < maxStates) r.splice(rndInt(r.length + 1), 0, rndSym());
+    else if (roll < 0.30 && r.length > 3) r.splice(rndInt(r.length), 1);
+    else r[rndInt(r.length)] = rndSym();
+  }
+  return ensureValid(r);
+}
+function crossover(a, b) {
+  let r = a.slice(0, 1 + rndInt(a.length - 1)).concat(b.slice(1 + rndInt(b.length - 1)));
+  if (r.length > maxStates) r = r.slice(0, maxStates);
+  return ensureValid(r);
+}
+function tournament() {
+  let bst = population[rndInt(population.length)];
+  for (let k = 0; k < 2; k++) { const c = population[rndInt(population.length)]; if (c.fit > bst.fit) bst = c; }
+  return bst;
+}
+function seedPopulation() {
+  const seeds = [['R', 'U', 'L', 'D'], ['L', 'U', 'R', 'R', 'D'], ['R', 'R', 'L', 'U', 'A'], ['L', 'D', 'R', 'U'], ['R', 'U', 'R', 'D', 'L', 'L'], ['U', 'L', 'D', 'R', 'C']];
+  if (valid(rule)) seeds.unshift(rule.slice());
+  population = seeds.map(r => ensureValid(r.slice(0, maxStates))).filter(valid).map(r => ({ rule: r }));
+  while (population.length < POP) population.push({ rule: randomRule() });
+  gen = 0; evalIdx = 0; curEval = null;
+}
+function recordArchive(cand) {
+  if (cand.fit === undefined || cand.q === undefined || cand.q <= 0) return;
+  const key = canonKey(cand.rule);
+  const cur = archive.get(key);
+  if (!cur || cand.fit > cur.fit) archive.set(key, { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, found: discovery++ });
+  if (archive.size > 400) {
+    const keep = [...archive.values()].sort((a, b) => b.fit - a.fit).slice(0, 200);
+    archive.clear();
+    for (const e of keep) archive.set(canonKey(e.rule), e);
+  }
+  placeInMap(cand);
+}
+const MAP_COLS = 10, MAP_ROWS = 6;
+const eliteMap = new Map();
+let mapDirty = false;
+function nicheOf(e) {
+  if (!(e.D > 1.0) || e.D >= 3.0 || e.cov < EV.MINCOV) return null;
+  const col = Math.min(MAP_COLS - 1, Math.floor((e.D - 1.0) / 2.0 * MAP_COLS));
+  const row = Math.min(MAP_ROWS - 1, Math.floor((e.ch || 0) * MAP_ROWS));   // rows = COLOR
+  return col + "," + row;
+}
+function placeInMap(cand) {
+  const key = nicheOf(cand);
+  if (!key) return;
+  const cur = eliteMap.get(key);
+  if (!cur || cand.q > cur.q) {
+    eliteMap.set(key, { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, found: discovery });
+    mapDirty = true;
+  }
+}
+function randomEliteRule() {
+  const vals = [...eliteMap.values()];
+  if (vals.length) return vals[rndInt(vals.length)].rule;
+  const arch = [...archive.values()];
+  return arch.length ? arch[rndInt(arch.length)].rule : randomRule();
+}
+function nextGeneration() {
+  population.sort((p, q) => q.fit - p.fit);
+  const next = [], seen = new Set();
+  for (let i = 0; i < ELITE_KEEP && i < population.length; i++) {
+    const p = population[i];
+    if (p.fit === undefined || seen.has(canonKey(p.rule))) continue;
+    next.push({ rule: p.rule.slice(), fit: p.fit, q: p.q, at: p.at, sym: p.sym, D: p.D, ch: p.ch, em: p.em, ball: p.ball, cov: p.cov });
+    seen.add(canonKey(p.rule));
+  }
+  while (next.length < POP) {
+    const roll = Math.random();
+    let childRule;
+    if (roll < 0.40) childRule = randomRule();
+    else if (roll < 0.62) childRule = mutate(randomEliteRule());
+    else if (roll < 0.80) {                    // polish: ONE symbol substitution of a champion
+      childRule = randomEliteRule().slice();
+      childRule[rndInt(childRule.length)] = rndSym();
+      childRule = ensureValid(childRule);
+    }
+    else {
+      const pa = tournament(), pb = tournament();
+      childRule = mutate(Math.random() < 0.7 ? crossover(pa.rule, pb.rule) : pa.rule.slice());
+    }
+    if (seen.has(canonKey(childRule))) childRule = randomRule();
+    seen.add(canonKey(childRule));
+    next.push({ rule: childRule });
+  }
+  population = next; gen++; evalIdx = 0;
+  renderTopList();
+}
+function searchTick() {
+  if (!searchOn) return;
+  const t0 = performance.now();
+  while (performance.now() - t0 < 12) {
+    if (evalIdx >= population.length) { nextGeneration(); break; }
+    const cand = population[evalIdx];
+    if (cand.fit !== undefined) { evalIdx++; continue; }
+    if (!valid(cand.rule)) { cand.fit = -1; cand.q = 0; cand.at = 0; cand.sym = 0; cand.D = 0; cand.ch = 0; cand.em = 0; cand.ball = 0; cand.cov = 0; curEval = null; evalIdx++; continue; }
+    if (!curEval || curEval.r !== cand.rule) startEval(cand.rule);
+    advanceEval(EV.SAMPLE);
+    if (curEval.result) {
+      const res = curEval.result;
+      cand.fit = res.fit; cand.q = res.q; cand.at = res.at; cand.sym = res.sym; cand.D = res.D; cand.ch = res.ch; cand.em = res.em; cand.ball = res.ball; cand.cov = res.cov;
+      evalsDone++;
+      recordArchive(cand);
+      renderTopList();
+      renderEliteMap();
+      if ((!best || cand.fit > best.fit) && cand.q > 0) {
+        best = { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov };
+        onNewBest();
+      }
+      curEval = null; evalIdx++;
+    }
+  }
+  updateSearchStats();
+  setTimeout(searchTick, 0);
+}
+
+/* ================= evolve UI ================= */
+const searchPanel = document.getElementById("t3_searchPanel");
+const rulePanel = document.getElementById("t3_rulePanel");
+const thumb = document.getElementById("t3_thumb");
+const tctx = thumb.getContext("2d");
+const topListEl = document.getElementById("t3_topList");
+let topEntries = [], topSig = "";
+let selected = null, following = true;
+const THUMB_MAX = 200000;
+topListEl.addEventListener("click", (ev) => {
+  const row = ev.target.closest(".toprow");
+  if (!row || !topListEl.contains(row)) return;
+  const e = topEntries[+row.dataset.idx];
+  if (!e) return;
+  following = false;
+  showEntry(e);
+});
+const eliteMapEl = document.getElementById("t3_eliteMap");
+const nicheCells = [];
+for (let r = 0; r < MAP_ROWS; r++) for (let c = 0; c < MAP_COLS; c++) {
+  const d = document.createElement("div");
+  d.className = "niche"; d.dataset.key = c + "," + r;
+  eliteMapEl.append(d); nicheCells.push(d);
+}
+let selNiche = null;
+eliteMapEl.addEventListener("click", (ev) => {
+  const cell = ev.target.closest(".niche");
+  if (!cell) return;
+  const e = eliteMap.get(cell.dataset.key);
+  if (!e) return;
+  following = false;
+  selNiche = cell.dataset.key;
+  showEntry(e);
+  renderEliteMap(true);
+});
+function renderEliteMap(force) {
+  if (!mapDirty && !force) return;
+  mapDirty = false;
+  let qmax = 0;
+  for (const e of eliteMap.values()) if (e.q > qmax) qmax = e.q;
+  for (const cell of nicheCells) {
+    const e = eliteMap.get(cell.dataset.key);
+    if (!e) { cell.className = "niche"; cell.style.background = ""; cell.title = ""; continue; }
+    cell.className = "niche occ" + (cell.dataset.key === selNiche ? " sel" : "");
+    const lum = 18 + 42 * (qmax ? e.q / qmax : 0);
+    cell.style.background = "hsl(158, 55%, " + lum.toFixed(0) + "%)";
+    cell.title = e.rule.join("") + "  \u00b7  score " + (e.q * 100).toFixed(1) + "  \u00b7  D " + e.D.toFixed(2) + "  \u00b7  sym " + Math.round(e.sym * 100) + "%";
+  }
+}
+function renderTopList() {
+  const top = [...archive.values()]
+    .sort((a, b) => (Math.round(b.q * 150) - Math.round(a.q * 150)) || (b.found - a.found))
+    .slice(0, 6);
+  const sig = top.map(e => e.rule.join("") + ":" + e.fit).join("|");
+  if (sig === topSig) return;
+  topSig = sig; topEntries = top;
+  topListEl.innerHTML = "";
+  top.forEach((e, i) => {
+    const row = document.createElement("div");
+    row.className = "toprow"; row.dataset.idx = i;
+    const r = document.createElement("span"); r.className = "r"; r.textContent = e.rule.join("");
+    const s2 = document.createElement("span"); s2.className = "s"; s2.textContent = (e.q * 100).toFixed(1) + " / " + e.cov.toLocaleString();
+    row.append(r, s2);
+    topListEl.append(row);
+  });
+}
+function metaText(e) {
+  return "score " + (e.q * 100).toFixed(1) + " \u00b7 D " + (e.D > 0 ? e.D.toFixed(2) : "\u2013") +
+    " \u00b7 sym " + Math.round(e.sym * 100) + "%" +
+    (e.ch !== undefined ? " \u00b7 color " + Math.round(e.ch * 100) + "%" : "") +
+    (e.em > 0.05 ? " \u00b7 emerged +" + Math.round(e.em * 100) + "%" : "") +
+    (e.ball ? " \u00b7 flight" : "") +
+    " \u00b7 peak at " + e.at.toLocaleString() + " \u00b7 " + e.cov.toLocaleString() + " cells";
+}
+function showEntry(e) {
+  selected = e.rule.slice();
+  document.getElementById("t3_bestRule").textContent = e.rule.join("");
+  document.getElementById("t3_bestMeta").textContent = metaText(e);
+  renderThumb(e.rule);
+}
+function updateSearchStats() {
+  document.getElementById("t3_searchStats").textContent =
+    "generation " + gen + " \u00b7 " + evalsDone.toLocaleString() + " rules tried \u00b7 " +
+    eliteMap.size + "/" + (MAP_COLS * MAP_ROWS) + " niches filled";
+}
+function onNewBest() {
+  if (following) showEntry(best);
+}
+function renderThumb(r) {
+  const map = new Map();
+  let x = 0, y = 0, z = 0, F = [1, 0, 0], U = [0, 0, 1];
+  const N = r.length;
+  for (let s = 1; s <= THUMB_MAX; s++) {
+    const k = pack(x, y, z);
+    const c = map.get(k) || 0;
+    const t = turn3(F, U, r[c]);
+    F = t[0]; U = t[1];
+    const nx = (c + 1) % N;
+    if (nx === 0) map.delete(k); else map.set(k, nx);
+    x += F[0]; y += F[1]; z += F[2];
+    if (x < -HALF || x > HALF || y < -HALF || y > HALF || z < -HALF || z > HALF) break;
+  }
+  // fixed isometric-ish orthographic projection onto 150x150
+  const ca = Math.cos(0.75), sa = Math.sin(0.75), cb = Math.cos(0.5), sb = Math.sin(0.5);
+  let minU = 1e9, maxU = -1e9, minV = 1e9, maxV = -1e9;
+  const pts = [];
+  for (const [k, st] of map) {
+    const u = unpack(k);
+    const x1 = u[0] * ca - u[1] * sa, y1 = u[0] * sa + u[1] * ca;
+    const px = x1, py = -(y1 * sb + u[2] * cb);
+    pts.push([px, py, st]);
+    if (px < minU) minU = px; if (px > maxU) maxU = px;
+    if (py < minV) minV = py; if (py > maxV) maxV = py;
+  }
+  tctx.fillStyle = "#FFF"; tctx.fillRect(0, 0, 150, 150);
+  if (!pts.length) return;
+  const sc = Math.min(144 / Math.max(1, maxU - minU), 144 / Math.max(1, maxV - minV));
+  const img = tctx.createImageData(150, 150), data = img.data;
+  data.fill(255);
+  for (const [px, py, st] of pts) {
+    const sx = Math.round(3 + (px - minU) * sc), sy = Math.round(3 + (py - minV) * sc);
+    if (sx < 0 || sx > 149 || sy < 0 || sy > 149) continue;
+    const [rr, gg, bb2] = rgbFor(st), o = (sy * 150 + sx) * 4;
+    data[o] = rr; data[o + 1] = gg; data[o + 2] = bb2;
+  }
+  tctx.putImageData(img, 0, 0);
+}
+
+/* ================= controls ================= */
+document.getElementById("t3_toggle").onclick = (e) => {
+  running = !running; e.target.textContent = running ? "Pause" : "Run";
+};
+document.getElementById("t3_reset").onclick = () => { resetSim(); fitView(); };
+document.getElementById("t3_fit").onclick = fitView;
+document.getElementById("t3_followBtn").onclick = (e) => {
+  follow = !follow; e.target.textContent = "Follow: " + (follow ? "on" : "off");
+};
+document.getElementById("t3_speed").oninput = (e) => { stepsPerFrame = +e.target.value; };
+document.getElementById("t3_pngBtn").onclick = () => {
+  const a = document.createElement("a");
+  a.download = "turmite3d-" + rule.join("") + "-" + stepCount + ".png";
+  a.href = canvas.toDataURL("image/png");
+  a.click();
+};
+document.getElementById("t3_ruleBtn").onclick = () => {
+  rulePanel.classList.toggle("open");
+  searchPanel.classList.remove("open");
+  document.getElementById("t3_ruleInput").value = rule.join("");
+};
+document.getElementById("t3_searchBtn").onclick = () => {
+  searchPanel.classList.toggle("open");
+  rulePanel.classList.remove("open");
+};
+function applyRuleStr(str) {
+  const r = str.toUpperCase().split("").filter(c => ALL.includes(c));
+  if (r.length < 2) return false;
+  rule = ensureValid(r); numStates = rule.length;
+  document.getElementById("t3_ruleInput").value = rule.join("");
+  resetSim(); fitView();
+  running = true; document.getElementById("t3_toggle").textContent = "Pause";
+  return true;
+}
+document.getElementById("t3_applyRule").onclick = () => applyRuleStr(document.getElementById("t3_ruleInput").value);
+document.getElementById("t3_randRule").onclick = () => applyRuleStr(randomRule().join(""));
+document.getElementById("t3_maxStatesR").oninput = (e) => {
+  maxStates = +e.target.value;
+  document.getElementById("t3_maxStatesL").textContent = maxStates;
+};
+document.getElementById("t3_searchToggle").onclick = (e) => {
+  searchOn = !searchOn;
+  e.target.textContent = searchOn ? "Stop" : "Start";
+  if (searchOn) {
+    if (!population.length) seedPopulation();
+    searchTick();
+  }
+};
+document.getElementById("t3_loadBest").onclick = () => { if (selected) applyRuleStr(selected.join("")); };
+
+window.addEventListener("resize", resizeView);
+resizeView();
+if (!ant) resetSim();
+fitView();
+loop();
+
+})();
+</script>
+</body>
+</html>
