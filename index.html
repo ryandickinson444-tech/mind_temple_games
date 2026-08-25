@@ -190,11 +190,11 @@
   .loCell:active { transform: translate(2px,2px); box-shadow: none; }
   #loMsg { min-height: 24px; font-weight: bold; color: var(--grn); margin-top: 8px; }
   #loStats { color: var(--dgy); margin-top: 4px; }
-  #loTeach {
-    text-align: left; border: 2px solid var(--blk); box-shadow: 4px 4px 0 var(--lgy);
-    padding: 8px 12px; margin: 18px auto 0; max-width: 460px; color: var(--dgy);
-  }
-  #loTeach b { color: var(--blk); }
+  #loGrid.tess { display: flex; flex-direction: column; gap: 14px; width: auto; }
+  .loRow { display: flex; gap: 16px; justify-content: center; }
+  #loGrid.tess .loSlice { gap: 3px; }
+  #loGrid.tess .loCell { width: 30px; height: 30px; box-shadow: 2px 2px 0 var(--lgy); }
+  #loGrid.tess .loCell.lit { box-shadow: 2px 2px 0 var(--brn); }
   .diffBtn.cur, .loMode.cur { background: var(--blu) !important; color: var(--wht) !important; }
   #loGrid.cube { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; width: auto; }
   .loSlice { display: grid; gap: 4px; }
@@ -234,7 +234,7 @@
     <button class="mbtn" data-view="eca">Rule Scrolls</button>
     <button class="mbtn" data-view="lights">Lights Out</button>
     <button class="mbtn" id="oracleBtn" title="draw three words from the well">Oracle</button>
-    <span style="margin-left:auto;color:var(--dgy)">3 engines for thinking</span>
+    <span style="margin-left:auto;color:var(--dgy)">3.5 engines for thinking</span>
   </div>
 
   <!-- ================= HOME ================= -->
@@ -251,7 +251,7 @@
       <div class="docline">║<span class="inner">  <span style="color:var(--blu)">█   █ </span><span style="color:var(--grn)">  █   </span><span style="color:var(--red)">█  ██ </span><span style="color:var(--mag)">█   █ </span><span style="color:var(--brn)">      </span><span style="color:var(--cyn)">  █   </span><span style="color:var(--blu)">█     </span><span style="color:var(--grn)">█   █ </span><span style="color:var(--red)">█     </span><span style="color:var(--mag)">█     </span><span style="color:var(--brn)">█     </span>  </span>║</div>
       <div class="docline">║<span class="inner">  <span style="color:var(--blu)">█   █ </span><span style="color:var(--grn)">█████ </span><span style="color:var(--red)">█   █ </span><span style="color:var(--mag)">████  </span><span style="color:var(--brn)">      </span><span style="color:var(--cyn)">  █   </span><span style="color:var(--blu)">█████ </span><span style="color:var(--grn)">█   █ </span><span style="color:var(--red)">█     </span><span style="color:var(--mag)">█████ </span><span style="color:var(--brn)">█████ </span>  </span>║</div>
       <div class="docline">║<span class="inner">                                                                      </span>║</div>
-      <div class="docline">║<span class="inner"><span style="color:var(--dgy)">      three small engines for thinking · an offering in 16 colors</span>     </span>║</div>
+      <div class="docline">║<span class="inner"><span style="color:var(--dgy)">   three and a half engines for thinking · an offering in 16 colors</span>   </span>║</div>
       <div class="docline">║<span class="inner">                                                                      </span>║</div>
       <div class="docline">╟──────────────────────────────────────────────────────────────────────╢</div>
       <div class="docline">║<span class="inner">                                                                      </span>║</div>
@@ -394,11 +394,12 @@
   <div id="loView" class="view">
     <div id="loInner">
       <div class="deco">&#9608;&#9619;&#9618;&#9617; LIGHTS OUT &#9617;&#9618;&#9619;&#9608;</div>
-      <div>Press a lamp: it and its four neighbors flip. Extinguish them all.</div>
+      <div>Press a lamp: it and its orthogonal neighbors flip. Extinguish them all.</div>
       <div class="actions" style="justify-content:center;margin-top:12px">
         <span style="color:var(--dgy)">mode</span>
         <button class="loMode cur" data-dim="2">2-D</button>
         <button class="loMode" data-dim="3">3-D cube</button>
+        <button class="loMode" data-dim="4">4-D tesseract</button>
         <span id="loSizes2">
           <span style="color:var(--dgy)">board</span>
           <button class="loSize" data-n="3">3&times;3</button>
@@ -409,6 +410,11 @@
           <span style="color:var(--dgy)">cube</span>
           <button class="loSize3" data-n="3">3&sup3;</button>
           <button class="loSize3" data-n="4">4&sup3;</button>
+        </span>
+        <span id="loSizes4" style="display:none">
+          <span style="color:var(--dgy)">tesseract</span>
+          <button class="loSize4" data-n="2">2&#8308;</button>
+          <button class="loSize4" data-n="3">3&#8308;</button>
         </span>
       </div>
       <div class="actions" style="justify-content:center;margin-top:6px">
@@ -428,25 +434,6 @@
       <div id="loGrid"></div>
       <div id="loMsg"></div>
       <div id="loStats"></div>
-      <div id="loTeach">
-        <b>Why this is hard by hand:</b> pressing is commutative and self-inverse &mdash; order
-        never matters, and pressing twice undoes it. So a solution is just a <i>set</i> of cells,
-        and there are 2<sup>n&sup2;</sup> candidate sets. Symmetric guessing lands you in symmetric
-        traps like all-on or one-lit-center (both solvable, neither obvious).
-        <br><br>
-        <b>In 3-D</b> the cross gains two more arms (the lamp above and below in the next
-        slices), the board is shown as z-layers side by side, and the same GF(2) algebra
-        still rules everything.
-        <br><br>
-        <b>The technique &mdash; "chase the lights":</b> ignore the top row. Walk the second row and
-        press underneath every lit cell above it; repeat downward. All lights end up herded into the
-        bottom row. Which bottom pattern you get determines a short fixed set of top-row presses
-        that finishes it &mdash; then chase once more. Try <b>Easy</b> first: three presses, findable by eye.
-        <br><br>
-        <b>On the assists:</b> the remaining-press counter is off by default because it hands you
-        perfect play &mdash; try a press, see if the number fell, undo if it rose. Turn it on to
-        study the structure, leave it off to actually solve.
-      </div>
     </div>
   </div>
 
@@ -1412,18 +1399,16 @@ let loN = 5, loDim = 2, loBoard = null, loMoves = 0, loHintIdx = -1, loDone = fa
 let loDepth = 3, loShowSol = false, loHistory = [];
 let loShowCount = false;   // off by default: the remaining-press count is a perfect-play oracle
 const loGridEl = document.getElementById("loGrid");
-function loCells() { return loDim === 3 ? loN * loN * loN : loN * loN; }
+function loCells() { return Math.pow(loN, loDim); }
 function loNeighbors(i) {
-  const n = loN, out = [i];
-  if (loDim === 2) {
-    const x = i % n, y = (i / n) | 0;
-    if (x > 0) out.push(i - 1); if (x < n - 1) out.push(i + 1);
-    if (y > 0) out.push(i - n); if (y < n - 1) out.push(i + n);
-  } else {
-    const x = i % n, y = ((i / n) | 0) % n, z = (i / (n * n)) | 0;
-    if (x > 0) out.push(i - 1); if (x < n - 1) out.push(i + 1);
-    if (y > 0) out.push(i - n); if (y < n - 1) out.push(i + n);
-    if (z > 0) out.push(i - n * n); if (z < n - 1) out.push(i + n * n);
+  /* the press cross in any dimension: ±1 along each axis, via strides */
+  const out = [i];
+  let rem = i, stride = 1;
+  for (let d = 0; d < loDim; d++) {
+    const c = rem % loN; rem = (rem / loN) | 0;
+    if (c > 0) out.push(i - stride);
+    if (c < loN - 1) out.push(i + stride);
+    stride *= loN;
   }
   return out;
 }
@@ -1432,6 +1417,7 @@ function loNew(n, dim) {
   loN = n; loDim = dim;
   loBoard = new Uint8Array(loCells());
   loGridEl.classList.toggle("cube", dim === 3);
+  loGridEl.classList.toggle("tess", dim === 4);
   loGridEl.innerHTML = "";
   if (dim === 2) {
     loGridEl.style.gridTemplateColumns = "repeat(" + n + ", 52px)";
@@ -1440,7 +1426,7 @@ function loNew(n, dim) {
       d.className = "loCell"; d.dataset.i = i;
       loGridEl.append(d);
     }
-  } else {
+  } else if (dim === 3) {
     loGridEl.style.gridTemplateColumns = "";
     for (let z = 0; z < n; z++) {
       const slice = document.createElement("div");
@@ -1456,6 +1442,31 @@ function loNew(n, dim) {
         slice.append(d);
       }
       loGridEl.append(slice);
+    }
+  } else {
+    /* 4-D: a w-row of z-slices, each slice an n×n xy board.
+       Neighbors along z are the same slot in the slice beside you;
+       neighbors along w are the same slot in the row above/below. */
+    loGridEl.style.gridTemplateColumns = "";
+    for (let w = 0; w < n; w++) {
+      const row = document.createElement("div");
+      row.className = "loRow";
+      for (let z = 0; z < n; z++) {
+        const slice = document.createElement("div");
+        slice.className = "loSlice";
+        slice.style.gridTemplateColumns = "repeat(" + n + ", 30px)";
+        const lab = document.createElement("div");
+        lab.className = "sliceLab"; lab.textContent = "z" + z + "\u00b7w" + w;
+        slice.append(lab);
+        for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+          const i = ((w * n + z) * n + y) * n + x;
+          const d = document.createElement("div");
+          d.className = "loCell"; d.dataset.i = i;
+          slice.append(d);
+        }
+        row.append(slice);
+      }
+      loGridEl.append(row);
     }
   }
   loScramble();
@@ -1586,12 +1597,14 @@ document.getElementById("loCounter").onclick = (e) => {
 document.getElementById("loScramble").onclick = loScramble;
 document.querySelectorAll(".loSize").forEach(b => b.onclick = () => loNew(+b.dataset.n, 2));
 document.querySelectorAll(".loSize3").forEach(b => b.onclick = () => loNew(+b.dataset.n, 3));
+document.querySelectorAll(".loSize4").forEach(b => b.onclick = () => loNew(+b.dataset.n, 4));
 document.querySelectorAll(".loMode").forEach(b => b.onclick = () => {
   document.querySelectorAll(".loMode").forEach(o => o.classList.toggle("cur", o === b));
-  const three = b.dataset.dim === "3";
-  document.getElementById("loSizes2").style.display = three ? "none" : "";
-  document.getElementById("loSizes3").style.display = three ? "" : "none";
-  loNew(three ? 3 : 5, three ? 3 : 2);
+  const dim = +b.dataset.dim;
+  document.getElementById("loSizes2").style.display = dim === 2 ? "" : "none";
+  document.getElementById("loSizes3").style.display = dim === 3 ? "" : "none";
+  document.getElementById("loSizes4").style.display = dim === 4 ? "" : "none";
+  loNew(dim === 2 ? 5 : 3, dim);
 });
 document.querySelectorAll(".diffBtn").forEach(b => b.onclick = () => {
   loDepth = +b.dataset.d;
