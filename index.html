@@ -686,11 +686,12 @@ document.getElementById("ruleBtn").onclick = (e) => {
 };
 
 /* ============================ evolutionary search ============================ */
-// headless evaluation on a large bounded grid; scores sustained symmetry.
-// Runs are sliced across ticks so a 1,000,000-step candidate never blocks the UI.
-const EV = { MAX: 1000000, SAMPLE: 50000, GRACE: 200000, CONTREP: 0.15, MINCOV: 1500 };
-// eval arena mirrors the on-screen world, so boundary hits are part of the result
-// and the best rules genuinely differ with the window size the app was opened at.
+// headless evaluation on a screen-sized TORUS (wrapping exactly like the lab), so the
+// full 1,000,000-step horizon is always graded and the thumbnail is the lab at that step.
+// Runs are sliced across ticks so a candidate never blocks the UI.
+const EV = { MAX: 1000000, SAMPLE: 50000, GRACE: 200000, CONTREP: 0.15, MINCOV: 1500, WANDER: 6 };
+// eval arena mirrors the on-screen world, so the seam is where the lab's seam is and
+// the best rules genuinely differ with the window size the app was opened at.
 let EW = 0, EH = 0, evalGrid = null, thumbGrid = null;
 function ensureEvalGrids() {
   if (evalGrid && EW === COLS && EH === ROWS) return;
@@ -807,11 +808,76 @@ function bandScore(D) {
 }
 // instantaneous quality: texture is the base; the fractal band is the big multiplier
 // (x2.5 swing), 2D spread and symmetry are mild multipliers.
-function qualityOf(ps, geo, sy) {
+function qualityOf(ps, geo, sy, ch, div) {
   const sym = Math.max(sy.sx, sy.sy, sy.sr);
-  const band = geo.D < 0 ? 0 : bandScore(geo.D);
+  const band0 = geo.D < 0 ? 0 : bandScore(geo.D);
+  // lattice relief: the band exists to reject chaos at high dimension, but a dense
+  // pattern with strong tile repetition is a lattice, not a blob. Chaos (rep ~0.07)
+  // gets no relief; a checker/weave fill (rep ~0.5) gets most of its band credit back.
+  const lattice = geo.D < 0 ? 0 : Math.max(0, Math.min(1, (ps.rep - 0.35) / 0.25));
+  const band = band0 + (1 - band0) * lattice;
   const spread = 0.70 + 0.30 * Math.min(1, geo.elong / 0.35);
-  return { q: ps.p * (0.40 + 0.60 * band) * spread * (0.80 + 0.20 * sym), sym, band };
+  const color = 0.55 + 0.45 * ch;                       // monochrome forfeits 45%
+  const multi = 1 + 0.35 * Math.min(1, div);            // several distinct ordered fills
+  return { q: ps.p * (0.40 + 0.60 * band) * spread * (0.80 + 0.20 * sym) * color * multi, sym, band };
+}
+// chroma: entropy of the painted-state distribution, full credit at three balanced colors
+function chromaOf(g, W, N, minx, maxx, miny, maxy) {
+  const h = new Array(N).fill(0); let tot = 0;
+  const stride = Math.max(1, Math.floor(Math.sqrt(((maxx - minx + 1) * (maxy - miny + 1)) / 120000)));
+  for (let y = miny; y <= maxy; y += stride) for (let x = minx; x <= maxx; x += stride) { const v = g[y * W + x]; if (v) { h[v]++; tot++; } }
+  if (!tot) return 0;
+  let H = 0; for (const c of h) if (c) { const p = c / tot; H -= p * Math.log2(p); }
+  return Math.min(1, H / Math.log2(3));
+}
+// distinct ORDERED fills. The bounding box is cut into blocks; a block counts only if it
+// is mostly painted AND its own 3x3 state-tile distribution is repetitive (a weave, a
+// checker, stripes, a solid color). Chaotic blocks are ignored entirely, so this cannot
+// reward noise. Ordered blocks are clustered by tile-histogram similarity (so stripes of
+// another color or orientation are another fill); the result is the entropy (bits) of
+// the cluster sizes: 0 for one fill everywhere, 1 for two equal ones. Judged on colors,
+// not occupancy: a three-tone weave is a different fill from a one-tone pinstripe.
+function texturesOf(g, W, H, minx, maxx, miny, maxy) {
+  const bw = maxx - minx + 1, bh = maxy - miny + 1;
+  const B = Math.max(16, Math.ceil(Math.sqrt(bw * bh / 400)));
+  const ts = Math.max(1, Math.floor(B / 14));           // tile stride inside a block
+  const blocks = []; let considered = 0;
+  for (let by = miny; by <= maxy; by += B) for (let bx = minx; bx <= maxx; bx += B) {
+    const hist = new Map(); let n = 0, cells = 0, occ = 0, solid = 0;
+    const y1 = Math.min(by + B, maxy) - 1, x1 = Math.min(bx + B, maxx) - 1;
+    for (let y = by; y < y1; y += ts) for (let x = bx; x < x1; x += ts) {
+      let key = 0, ones = 0, same = true, first = 0;
+      for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 3; dx++) {
+        const xx = x + dx, yy = y + dy;
+        const v = (xx >= W || yy >= H) ? 0 : g[yy * W + xx];
+        if (dy === 0 && dx === 0) first = v; else if (v !== first) same = false;
+        key = key * 16 + v; if (v) ones++;
+      }
+      cells++; if (!ones) continue; occ++;
+      if (same) { solid++; continue; }                 // one color throughout: solid fill
+      hist.set(key, (hist.get(key) || 0) + 1); n++;
+    }
+    if (!cells || occ / cells < 0.6) continue;         // not a filled region
+    considered++;
+    if (solid / occ > 0.9) { blocks.push({ solid: true }); continue; }
+    if (n < 20) continue;
+    let ent = 0; for (const c of hist.values()) { const p = c / n; ent -= p * Math.log2(p); }
+    if (1 - ent / Math.log2(Math.min(n, 510)) < 0.35) continue;   // chaotic block
+    blocks.push({ hist });
+  }
+  if (considered < 4) return 0;
+  const ordered = blocks.length;
+  const cos = (a, b) => { let d = 0, na = 0, nb = 0; for (const [k, v] of a) { na += v * v; const w = b.get(k); if (w) d += v * w; } for (const v of b.values()) nb += v * v; return d / Math.sqrt(na * nb); };
+  const clusters = [];
+  for (const b of blocks) {
+    if (b.solid) { const c = clusters.find(c => c.solid); if (c) c.count++; else clusters.push({ solid: true, count: 1 }); continue; }
+    let best = -1, bs = 0;
+    for (let i = 0; i < clusters.length; i++) { if (clusters[i].solid) continue; const s = cos(b.hist, clusters[i].hist); if (s > bs) { bs = s; best = i; } }
+    if (best >= 0 && bs > 0.80) clusters[best].count++; else clusters.push({ hist: b.hist, count: 1 });
+  }
+  let div = 0;                                          // shares are of ALL ordered blocks,
+  for (const c of clusters) { const p = c.count / ordered; if (p >= 0.08) div -= p * Math.log2(p); }
+  return div;
 }
 
 
@@ -823,9 +889,9 @@ function startEval(r) {
   evalGrid.fill(0);
   curEval = {
     r, N: r.length, W, H,
-    x: cx, y: cy, d: 0, cov: 0,
+    x: cx, y: cy, d: 0, cov: 0, ux: 0, uy: 0,          // ux/uy: unwrapped displacement
     minx: cx, maxx: cx, miny: cy, maxy: cy,
-    s: 0, q: 0, at: 0, sym: 0, D: 0, first: -1, ball: 0,
+    s: 0, q: 0, at: 0, sym: 0, D: 0, first: -1, ball: 0, ch: 0, div: 0,
     ring: [],                                  // ant positions every 5k steps (highway detector)
     result: null
   };
@@ -834,9 +900,11 @@ function sampleQuality(e, updatePeak) {
   const g = evalGrid;
   const ps = patternScore(g, e.W, e.H, e.minx, e.maxx, e.miny, e.maxy);
   const geo = boxDim(g, e.W, e.minx, e.maxx, e.miny, e.maxy);
-  const { q, sym } = qualityOf(ps, geo, symScores(g, e.W, e.H, e.minx, e.maxx, e.miny, e.maxy));
+  const ch = chromaOf(g, e.W, e.N, e.minx, e.maxx, e.miny, e.maxy);
+  const div = texturesOf(g, e.W, e.H, e.minx, e.maxx, e.miny, e.maxy);
+  const { q, sym } = qualityOf(ps, geo, symScores(g, e.W, e.H, e.minx, e.maxx, e.miny, e.maxy), ch, div);
   if (e.first < 0) e.first = q;
-  if (updatePeak && e.cov >= EV.MINCOV && q > e.q) { e.q = q; e.at = e.s; e.sym = sym; e.D = geo.D; }
+  if (updatePeak && e.cov >= EV.MINCOV && q > e.q) { e.q = q; e.at = e.s; e.sym = sym; e.D = geo.D; e.ch = ch; e.div = div; }
   return ps;
 }
 function finishEval() {
@@ -849,11 +917,36 @@ function finishEval() {
   const fit = (e.cov < EV.MINCOV && Q === 0)
     ? e.cov
     : Math.round(Q * 1e9) + dirBonus(e.r) + Math.min(e.cov, 999999);
-  e.result = { fit, q: Q, at: e.at, sym: e.sym, D: e.D, em: emerge, ball: e.ball, cov: e.cov };
+  e.result = { fit, q: Q, at: e.at, sym: e.sym, D: e.D, em: emerge, ball: e.ball, cov: e.cov, ch: e.ch, div: e.div, img: captureEvalImage(e) };
+}
+// Snapshot of the evaluation grid exactly as it was graded, so the preview shows the
+// state the score was assigned to (step 1,000,000, or wherever the run actually ended:
+// the screen edge, or the grace-period cull). Cropped to the bounding box; stored at full
+// resolution when small, else downsampled with "first painted cell in the block wins" so
+// thin lace survives the shrink.
+const THUMB_PX = 150;
+function captureEvalImage(e) {
+  const g = evalGrid, W = e.W;
+  const w = e.maxx - e.minx + 1, h = e.maxy - e.miny + 1;
+  const b = Math.max(1, Math.ceil(Math.max(w, h) / THUMB_PX));
+  const ow = Math.ceil(w / b), oh = Math.ceil(h / b);
+  const out = new Uint8Array(ow * oh);
+  if (b === 1) {
+    for (let yy = 0; yy < h; yy++) out.set(g.subarray((e.miny + yy) * W + e.minx, (e.miny + yy) * W + e.minx + w), yy * w);
+  } else {
+    for (let oy = 0; oy < oh; oy++) for (let ox = 0; ox < ow; ox++) {
+      const y0 = e.miny + oy * b, x0 = e.minx + ox * b;
+      const y1 = Math.min(e.maxy, y0 + b - 1), x1 = Math.min(e.maxx, x0 + b - 1);
+      let v = 0;
+      scan: for (let yy = y0; yy <= y1; yy++) { const row = yy * W; for (let xx = x0; xx <= x1; xx++) if (g[row + xx]) { v = g[row + xx]; break scan; } }
+      out[oy * ow + ox] = v;
+    }
+  }
+  return { w: ow, h: oh, s: out, at: e.s };
 }
 function advanceEval(maxChunk) {
   const e = curEval, g = evalGrid, W = e.W, H = e.H, N = e.N, r = e.r;
-  let x = e.x, y = e.y, d = e.d, cov = e.cov, s = e.s;
+  let x = e.x, y = e.y, d = e.d, cov = e.cov, s = e.s, ux = e.ux, uy = e.uy;
   let minx = e.minx, maxx = e.maxx, miny = e.miny, maxy = e.maxy;
   let done = false, sampled = false, n = 0;
   while (n < maxChunk) {
@@ -863,12 +956,20 @@ function advanceEval(maxChunk) {
     const nx = (c + 1) % N;
     if (c === 0) { if (nx !== 0) cov++; } else if (nx === 0) cov--;
     g[i] = nx;
-    x += DX[d]; y += DY[d]; s++; n++;
-    if (x < 0 || x >= W || y < 0 || y >= H) { done = true; break; } // hit the screen edge
+    x += DX[d]; y += DY[d]; ux += DX[d]; uy += DY[d]; s++; n++;
+    // the arena is a torus, exactly like the lab: the full horizon is always graded,
+    // and what the ant builds after crossing the seam counts (that is where one rule
+    // lays down several different triangles).
+    if (x < 0) x += W; else if (x >= W) x -= W;
+    if (y < 0) y += H; else if (y >= H) y -= H;
+    // an ant more than WANDER arenas from home is tiling the torus (a wrapped highway
+    // smearing stripes across the world), not composing on this screen: the run ends,
+    // and whatever it built before leaving is what gets graded.
+    if (ux > EV.WANDER * W || ux < -EV.WANDER * W || uy > EV.WANDER * H || uy < -EV.WANDER * H) { done = true; break; }
     if (x < minx) minx = x; else if (x > maxx) maxx = x;
     if (y < miny) miny = y; else if (y > maxy) maxy = y;
     if (s % 5000 === 0) {                       // ballistic (highway) detector
-      e.ring.push(x, y);
+      e.ring.push(ux, uy);
       if (e.ring.length > 14) e.ring.splice(0, 2);
       if (e.ring.length === 14) {
         const dx = x - e.ring[0], dy = y - e.ring[1];
@@ -877,7 +978,7 @@ function advanceEval(maxChunk) {
     }
     if (s % EV.SAMPLE === 0) { sampled = true; break; }
   }
-  e.x = x; e.y = y; e.d = d; e.cov = cov; e.s = s;
+  e.x = x; e.y = y; e.d = d; e.cov = cov; e.s = s; e.ux = ux; e.uy = uy;
   e.minx = minx; e.maxx = maxx; e.miny = miny; e.maxy = maxy;
   if (sampled && !done) {
     const ps = sampleQuality(e, true);
@@ -946,7 +1047,7 @@ function nextGeneration() {
   for (let i = 0; i < ELITE_KEEP && i < population.length; i++) {
     const p = population[i];
     if (seen.has(canonKey(p.rule))) continue;               // mirror twins: keep one elite slot
-    next.push({ rule: p.rule.slice(), fit: p.fit, q: p.q, at: p.at, sym: p.sym, D: p.D, ch: p.ch, em: p.em, ball: p.ball, cov: p.cov });
+    next.push({ rule: p.rule.slice(), fit: p.fit, q: p.q, at: p.at, sym: p.sym, D: p.D, ch: p.ch, em: p.em, ball: p.ball, cov: p.cov, div: p.div, img: p.img });
     seen.add(canonKey(p.rule));
   }
   // Turmite rule space is nearly gradient-free: one symbol change usually swaps the whole
@@ -972,7 +1073,7 @@ function recordArchive(cand) {
   if (cand.fit === undefined || cand.q === undefined || cand.q <= 0) return;
   const key = canonKey(cand.rule);          // a rule and its mirror are ONE archive entry
   const cur = archive.get(key);
-  if (!cur || cand.fit > cur.fit) archive.set(key, { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, found: discovery++ });
+  if (!cur || cand.fit > cur.fit) archive.set(key, { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, div: cand.div, img: cand.img, found: discovery++ });
   if (archive.size > 400) {                 // prune: keep the best 200 ever
     const keep = [...archive.values()].sort((a, b) => b.fit - a.fit).slice(0, 200);
     archive.clear();
@@ -997,7 +1098,7 @@ function placeInMap(cand) {
   if (!key) return;
   const cur = eliteMap.get(key);
   if (!cur || cand.q > cur.q) {
-    eliteMap.set(key, { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, found: discovery });
+    eliteMap.set(key, { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, div: cand.div, img: cand.img, found: discovery });
     mapDirty = true;
   }
 }
@@ -1022,13 +1123,13 @@ function searchTick() {
     advanceEval(EV.SAMPLE);                                // ~one inter-sample segment
     if (curEval.result) {
       const res = curEval.result;
-      cand.fit = res.fit; cand.q = res.q; cand.at = res.at; cand.sym = res.sym; cand.D = res.D; cand.ch = res.ch; cand.em = res.em; cand.ball = res.ball; cand.cov = res.cov;
+      cand.fit = res.fit; cand.q = res.q; cand.at = res.at; cand.sym = res.sym; cand.D = res.D; cand.ch = res.ch; cand.em = res.em; cand.ball = res.ball; cand.cov = res.cov; cand.div = res.div; cand.img = res.img;
       evalsDone++;
       recordArchive(cand);                                 // EVERY scored rule competes for the board
       renderTopList();                                     // cheap: skips if top-6 unchanged
       renderEliteMap();                                    // cheap: skips if map unchanged
       if ((!best || cand.fit > best.fit) && cand.q > 0) {
-        best = { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov };
+        best = { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, div: cand.div, img: cand.img };
         onNewBest();
       }
       curEval = null; evalIdx++;
@@ -1058,12 +1159,13 @@ topListEl.addEventListener("click", (ev) => {
 });
 
 let selected = null, following = true;      // panel preview follows best until a row is clicked
-const THUMB_MAX = 300000;                    // cap preview sim so clicks stay responsive
+const THUMB_MAX = EV.MAX;                    // fallback preview sim (entries normally carry a graded snapshot)
 
 function metaText(e) {
   return "score " + (e.q * 100).toFixed(1) + " \u00b7 D " + (e.D > 0 ? e.D.toFixed(2) : "\u2013") +
     " \u00b7 sym " + Math.round(e.sym * 100) + "%" +
     (e.ch !== undefined ? " \u00b7 color " + Math.round(e.ch * 100) + "%" : "") +
+    (e.div !== undefined ? " \u00b7 fills " + e.div.toFixed(1) : "") +
     (e.em > 0.05 ? " \u00b7 emerged +" + Math.round(e.em * 100) + "%" : "") +
     (e.ball ? " \u00b7 highway" : "") +
     " \u00b7 peak at " + e.at.toLocaleString() + " \u00b7 " + e.cov.toLocaleString() + " cells";
@@ -1071,8 +1173,10 @@ function metaText(e) {
 function showEntry(e) {
   selected = e.rule.slice();
   document.getElementById("bestRule").textContent = e.rule.join("");
-  document.getElementById("bestMeta").textContent = metaText(e);
-  renderThumb(e.rule);
+  document.getElementById("bestMeta").textContent = metaText(e) +
+    (e.img ? "  \u00b7  shown at step " + e.img.at.toLocaleString() : "");
+  if (e.img) drawThumbStates(e.img.s, e.img.w, e.img.h);
+  else renderThumb(e.rule);
 }
 function updateSearchStats() {
   document.getElementById("searchStats").textContent =
@@ -1102,23 +1206,26 @@ function renderThumb(r) {
     const i = y * W + x, c = g[i];
     d = turn(d, r[c]); g[i] = (c + 1) % N;
     x += DX[d]; y += DY[d];
-    if (x < 0 || x >= W || y < 0 || y >= H) break;
+    if (x < 0) x += W; else if (x >= W) x -= W;
+    if (y < 0) y += H; else if (y >= H) y -= H;
     if (x < minx) minx = x; else if (x > maxx) maxx = x;
     if (y < miny) miny = y; else if (y > maxy) maxy = y;
   }
   const w = maxx - minx + 1, h = maxy - miny + 1;
+  const crop = new Uint8Array(w * h);
+  for (let yy = 0; yy < h; yy++) crop.set(g.subarray((miny + yy) * W + minx, (miny + yy) * W + minx + w), yy * w);
+  drawThumbStates(crop, w, h);
+}
+function drawThumbStates(st, w, h) {
   const off = document.createElement("canvas"); off.width = w; off.height = h;
   const octx = off.getContext("2d");
   const img = octx.createImageData(w, h), data = img.data;
   data.fill(255);                                   // white background
-  for (let yy = miny; yy <= maxy; yy++) {
-    const row = yy * W, orow = (yy - miny) * w;
-    for (let xx = minx; xx <= maxx; xx++) {
-      const v = g[row + xx];
-      if (!v) continue;
-      const [rr, gg, bb] = rgbFor(v), p = (orow + (xx - minx)) * 4;
-      data[p] = rr; data[p + 1] = gg; data[p + 2] = bb;
-    }
+  for (let i = 0; i < w * h; i++) {
+    const v = st[i];
+    if (!v) continue;
+    const [rr, gg, bb] = rgbFor(v), p = i * 4;
+    data[p] = rr; data[p + 1] = gg; data[p + 2] = bb;
   }
   octx.putImageData(img, 0, 0);
   tctx.fillStyle = "#fff"; tctx.fillRect(0, 0, thumb.width, thumb.height);
@@ -1161,10 +1268,17 @@ function renderEliteMap(force) {
   }
 }
 function renderTopList() {
-  // near-equal scores (within ~0.7%) count as tied, newest first: fresh finds stay visible
-  const top = [...archive.values()]
-    .sort((a, b) => (Math.round(b.q * 150) - Math.round(a.q * 150)) || (b.found - a.found))
-    .slice(0, 6);
+  // near-equal scores (within ~0.7%) count as tied, newest first: fresh finds stay visible.
+  // One entry per niche: the board shows the six best DIFFERENT kinds of pattern, so a
+  // family of look-alike triangles can hold at most one row (the rest stay in the map).
+  const top = [], seen = new Set();
+  for (const e of [...archive.values()].sort((a, b) => (Math.round(b.q * 150) - Math.round(a.q * 150)) || (b.found - a.found))) {
+    const key = nicheOf(e);
+    if (key && seen.has(key)) continue;
+    if (key) seen.add(key);
+    top.push(e);
+    if (top.length === 6) break;
+  }
   const sig = top.map(e => e.rule.join("") + ":" + e.fit).join("|");
   if (sig === topSig) return;               // unchanged -> don't churn the DOM (which eats clicks)
   topSig = sig; topEntries = top;
@@ -1669,35 +1783,49 @@ function rgbFor(i) {
 /* ================= live simulation ================= */
 let rule = ['R', 'U', 'L', 'D'];
 let numStates = rule.length;
-let world = new Map();                 // packed -> idx*16 + state
-let xs = [], ys = [], zs = [], cs = []; // render point store (cs -1 = erased)
+/* No memory horizon. A single V8 Map dies at ~16.7M entries, so the world is sharded
+   across 64 Maps by key: the ceiling becomes ~1 billion cells, i.e. whatever RAM the tab
+   has (roughly 50 bytes per live cell). Nothing is ever forgotten. */
+const SHARDS = 64;
+class ShardedMap {
+  constructor() { this.m = []; for (let i = 0; i < SHARDS; i++) this.m.push(new Map()); this.size = 0; }
+  get(k) { return this.m[k % SHARDS].get(k); }
+  set(k, v) { const s = this.m[k % SHARDS], b = s.size; s.set(k, v); this.size += s.size - b; }
+  delete(k) { if (this.m[k % SHARDS].delete(k)) this.size--; }
+  *[Symbol.iterator]() { for (const s of this.m) yield* s; }
+}
+let world = new ShardedMap();          // packed -> idx*16 + state
+/* render point store: growable typed arrays (coords fit Int16; cs -1 = erased) */
+let pcap = 1 << 20, np = 0;
+let xs = new Int16Array(pcap), ys = new Int16Array(pcap), zs = new Int16Array(pcap), cs = new Int8Array(pcap);
+function growStore() {
+  pcap *= 2;
+  const gx = new Int16Array(pcap), gy = new Int16Array(pcap), gz = new Int16Array(pcap), gc = new Int8Array(pcap);
+  gx.set(xs); gy.set(ys); gz.set(zs); gc.set(cs);
+  xs = gx; ys = gy; zs = gz; cs = gc;
+}
+let pending = [];                      // point indices changed since last frame
+let fullRedraw = true, erasedSinceHeal = 0, lastFullRedraw = 0;
 let ant = null, stepCount = 0, running = true, stepsPerFrame = 400;
 function resetSim() {
-  world = new Map(); xs = []; ys = []; zs = []; cs = [];
+  world = new ShardedMap(); np = 0; pending = []; fullRedraw = true; erasedSinceHeal = 0;
   ant = { x: 0, y: 0, z: 0, F: [1, 0, 0], U: [0, 0, 1] };
   stepCount = 0;
   updateLabel();
 }
-const WORLD_CAP = 2000000;                 // V8 Maps die at ~16.7M entries
-function enforceCap() {
-  if (world.size > WORLD_CAP) {              // oldest cells fade from memory
-    let n = (WORLD_CAP / 5) | 0;
-    for (const k of world.keys()) {
-      if (n-- <= 0) break;
-      const v = world.get(k);
-      cs[Math.floor(v / 16)] = -1;
-      world.delete(k);
-    }
+/* Not a cap: garbage collection of erased points. Cells that cycled back to state 0
+   leave dead slots in the store; when more than half the store is dead, compact and
+   reindex. Live cells are never touched. */
+function collectDead() {
+  if (np < 4000000 || world.size * 2 > np) return;
+  let n = 0;
+  for (const [k, v] of world) {
+    const st = v % 16, i = Math.floor(v / 16);
+    xs[n] = xs[i]; ys[n] = ys[i]; zs[n] = zs[i]; cs[n] = st;
+    world.set(k, n * 16 + st);
+    n++;
   }
-  if (xs.length > WORLD_CAP * 1.7) {         // compact the render store, reindex
-    const nx = [], ny = [], nz = [], nc = [];
-    for (const [k, v] of world) {
-      const st = v % 16, i = Math.floor(v / 16);
-      world.set(k, nx.length * 16 + st);
-      nx.push(xs[i]); ny.push(ys[i]); nz.push(zs[i]); nc.push(st);
-    }
-    xs = nx; ys = ny; zs = nz; cs = nc;
-  }
+  np = n; pending = []; fullRedraw = true;
 }
 function step() {
   const a = ant;
@@ -1710,10 +1838,10 @@ function step() {
   const nx = (c + 1) % numStates;
   if (nx === 0) {
     world.delete(k);
-    if (idx >= 0) cs[idx] = -1;
+    if (idx >= 0) { cs[idx] = -1; pending.push(idx); erasedSinceHeal++; }
   } else {
-    if (idx < 0) { idx = xs.length; xs.push(a.x); ys.push(a.y); zs.push(a.z); cs.push(nx); }
-    else cs[idx] = nx;
+    if (idx < 0) { if (np === pcap) growStore(); idx = np++; xs[idx] = a.x; ys[idx] = a.y; zs[idx] = a.z; }
+    cs[idx] = nx; pending.push(idx);
     world.set(k, idx * 16 + nx);
   }
   a.x += a.F[0]; a.y += a.F[1]; a.z += a.F[2];
@@ -1734,6 +1862,7 @@ const ctx = canvas.getContext("2d");
 let cw = 0, ch = 0, fb = null, fbImg = null, ptsCanvas = null, ptsCtx = null;
 let camYaw = 0.72, camPitch = 0.42, camDist = 120, target = [0, 0, 0], follow = false;
 function resizeView() {
+  fullRedraw = true;
   cw = canvas.width = window.innerWidth;
   ch = canvas.height = window.innerHeight;
   ptsCanvas = document.createElement("canvas"); ptsCanvas.width = cw; ptsCanvas.height = ch;
@@ -1769,7 +1898,7 @@ function niceStep(range) {
 }
 function drawAxes() {
   let ext = 12;
-  for (let i = 0; i < xs.length; i += Math.max(1, xs.length >> 12)) {
+  for (let i = 0; i < np; i += Math.max(1, np >> 12)) {
     if (cs[i] < 0) continue;
     ext = Math.max(ext, Math.abs(xs[i]), Math.abs(ys[i]), Math.abs(zs[i]));
   }
@@ -1810,6 +1939,17 @@ function drawAxes() {
     ctx.beginPath(); ctx.moveTo(C[i][0], C[i][1]); ctx.lineTo(C[j][0], C[j][1]); ctx.stroke();
   }
 }
+function plotPoint(i) {
+  const c = cs[i];
+  const p = project(xs[i], ys[i], zs[i]);
+  if (!p) return;
+  const sx = p[0] | 0, sy = p[1] | 0;
+  if (sx < 0 || sx >= cw - 1 || sy < 0 || sy >= ch - 1) return;
+  const col = c < 0 ? 0 : COLORS32[c];       // erased cell -> transparent
+  const o = sy * cw + sx;
+  fb[o] = col; fb[o + 1] = col; fb[o + cw] = col; fb[o + cw + 1] = col;
+}
+let camSig = "";
 function render() {
   if (follow && ant) {
     target[0] += (ant.x - target[0]) * 0.12;
@@ -1819,19 +1959,24 @@ function render() {
   beginProject();
   ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, cw, ch);
   drawAxes();
-  fb.fill(0);
-  const n = xs.length, stride = Math.max(1, Math.ceil(n / 200000));
-  for (let i = 0; i < n; i += stride) {
-    const c = cs[i];
-    if (c < 0) continue;
-    const p = project(xs[i], ys[i], zs[i]);
-    if (!p) continue;
-    const sx = p[0] | 0, sy = p[1] | 0;
-    if (sx < 0 || sx >= cw - 1 || sy < 0 || sy >= ch - 1) continue;
-    const col = COLORS32[c];
-    const o = sy * cw + sx;
-    fb[o] = col; fb[o + 1] = col; fb[o + cw] = col; fb[o + cw + 1] = col;
+  /* Every cell is drawn; there is no stride. The point framebuffer persists between
+     frames: while the camera is still, only cells that changed this frame are plotted
+     (cost ~ steps per frame, not cells in the world). Any camera motion re-projects
+     everything. Erasing a cell punches a transparent hole that can expose nothing behind
+     it, so the frame is fully redrawn once a second while erasures are happening. */
+  const sig = camYaw.toFixed(4) + "," + camPitch.toFixed(4) + "," + camDist.toFixed(2) + "," +
+    target[0].toFixed(2) + "," + target[1].toFixed(2) + "," + target[2].toFixed(2);
+  if (sig !== camSig) { camSig = sig; fullRedraw = true; }
+  const now = performance.now();
+  if (erasedSinceHeal > 0 && now - lastFullRedraw > 1000) fullRedraw = true;
+  if (fullRedraw) {
+    fb.fill(0);
+    for (let i = 0; i < np; i++) if (cs[i] >= 0) plotPoint(i);
+    fullRedraw = false; erasedSinceHeal = 0; lastFullRedraw = now;
+  } else {
+    for (let j = 0; j < pending.length; j++) plotPoint(pending[j]);
   }
+  pending.length = 0;
   ptsCtx.putImageData(fbImg, 0, 0);
   ctx.drawImage(ptsCanvas, 0, 0);
   if (ant) {
@@ -1846,13 +1991,13 @@ function render() {
 }
 function fitView() {
   let n = 0, sx = 0, sy = 0, sz = 0, ext = 8;
-  for (let i = 0; i < xs.length; i++) {
+  for (let i = 0; i < np; i++) {
     if (cs[i] < 0) continue;
     n++; sx += xs[i]; sy += ys[i]; sz += zs[i];
   }
   if (n) { target = [sx / n, sy / n, sz / n]; }
   else target = [0, 0, 0];
-  for (let i = 0; i < xs.length; i++) {
+  for (let i = 0; i < np; i++) {
     if (cs[i] < 0) continue;
     ext = Math.max(ext, Math.abs(xs[i] - target[0]), Math.abs(ys[i] - target[1]), Math.abs(zs[i] - target[2]));
   }
@@ -1890,7 +2035,7 @@ function loop() {
   if (window.MT_VIEW && window.MT_VIEW !== "t3d") { requestAnimationFrame(loop); return; }
   if (running) {
     for (let i = 0; i < stepsPerFrame; i++) step();
-    enforceCap();
+    collectDead();
     updateLabel();
   }
   render();
