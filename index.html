@@ -223,6 +223,61 @@
   #t3_topList { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; margin-bottom: 8px; }
   #t3_eliteMap { display: grid; grid-template-columns: repeat(10, 18px); gap: 3px;
     margin-top: 8px; margin-bottom: 2px; width: max-content; }
+
+  /* ---- THE SPHINX ---- */
+  #sxView { position: fixed; inset: 30px 0 24px; overflow-y: auto; }
+  #sxInner { max-width: 660px; margin: 0 auto; padding: 20px 14px 40px; }
+  #sxInner > .deco, #sxInner > .sub { text-align: center; }
+  .sxBar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: center; margin-top: 8px; }
+  .sxBar .lab { color: var(--dgy); }
+  .view button.sxCat { font-size: 13px; padding: 2px 6px; }
+  .view button.sxCat.off { color: var(--lgy); text-decoration: line-through; box-shadow: none; }
+  .sxMode.cur, .sxDiff.cur { background: var(--blu) !important; color: var(--wht) !important; }
+  #sxHud { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 14px 0 0; padding: 2px 8px; background: var(--blu); color: var(--wht); }
+  #sxCard { border: 2px solid var(--blk); box-shadow: 5px 5px 0 var(--lgy); padding: 10px 14px 14px; background: var(--wht); }
+  #sxTag { color: var(--mag); font-weight: bold; }
+  #sxPrompt { margin: 6px 0 10px; }
+  #sxFig { display: flex; justify-content: center; margin: 6px 0 14px; overflow-x: auto; }
+  .sxSeq { font-size: 24px; font-weight: bold; color: var(--blu); text-align: center; word-spacing: 4px; padding: 6px 0; }
+  .sxQ { color: var(--red); font-weight: bold; }
+  .sxMatrix { display: grid; grid-template-columns: repeat(3, 84px); border: 2px solid var(--blk); }
+  .sxMatrix > div { width: 84px; height: 84px; border: 1px solid var(--lgy); box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+  .sxMatrix .miss, .sxQbox { font-size: 34px; color: var(--red); font-weight: bold; }
+  .sxRow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .sxQbox { width: 62px; height: 62px; border: 2px dashed var(--red); box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+  .sxEq { font-size: 22px; line-height: 1.7; text-align: center; }
+  .sxEq .sxAsk { border-top: 2px solid var(--blk); margin-top: 4px; padding-top: 2px; }
+  .sxSym { font-weight: bold; }
+  .sxPairs { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; font-size: 22px; font-weight: bold; color: var(--blu); }
+  .sxGrid { display: grid; grid-template-columns: repeat(3, 64px); border: 2px solid var(--blk); }
+  .sxGrid > div { height: 52px; border: 1px solid var(--lgy); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; }
+  .sxClues, .sxPrem { line-height: 1.65; align-self: flex-start; margin: 0 auto; }
+  .sxConc { border-top: 2px solid var(--blk); margin-top: 4px; font-weight: bold; color: var(--blu); }
+  #sxOpts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  #sxOpts.two { grid-template-columns: repeat(2, 1fr); }
+  .view button.sxOpt { position: relative; display: flex; align-items: center; justify-content: center; min-height: 50px; padding: 8px 6px 6px; }
+  .sxOpt .k { position: absolute; top: 2px; left: 5px; font-size: 12px; color: var(--dgy); }
+  .sxOpt .v { font-size: 20px; font-weight: bold; color: var(--blk); }
+  .view button.sxOpt.right { background: var(--lgr); }
+  .view button.sxOpt.wrong { background: var(--lrd); }
+  .view button.sxOpt.picked { background: var(--lcy); }
+  .view button.sxOpt:disabled { cursor: default; }
+  #sxFeed { min-height: 20px; margin-top: 12px; font-weight: bold; }
+  #sxExplain { margin-top: 4px; }
+  .sxResList { columns: 2; column-gap: 24px; white-space: pre; }
+  .sxRes { cursor: pointer; padding: 0 4px; }
+  .sxRes:hover { background: var(--yel); }
+  .sxRes.na { cursor: default; color: var(--dgy); }
+  .sxRes.na:hover { background: none; }
+  #sxStats { color: var(--dgy); margin-top: 14px; text-align: center; font-size: 13px; }
+  .sxPer { margin-top: 3px; }
+  #sxKeys { color: var(--dgy); text-align: center; font-size: 13px; margin-top: 6px; }
+  @media (max-width: 480px) {
+    .sxMatrix { grid-template-columns: repeat(3, 72px); }
+    .sxMatrix > div { width: 72px; height: 72px; }
+    .sxMatrix svg { width: 64px; height: 64px; }
+    .sxResList { columns: 1; }
+  }
 </style>
 </head>
 <body>
@@ -233,8 +288,9 @@
     <button class="mbtn" data-view="t3d">Turmite 3D</button>
     <button class="mbtn" data-view="eca">Rule Scrolls</button>
     <button class="mbtn" data-view="lights">Lights Out</button>
+    <button class="mbtn" data-view="sphinx">Sphinx</button>
     <button class="mbtn" id="oracleBtn" title="draw three words from the well">Oracle</button>
-    <span style="margin-left:auto;color:var(--dgy)">3.5 engines for thinking</span>
+    <span style="margin-left:auto;color:var(--dgy)">5.5 engines for thinking</span>
   </div>
 
   <!-- ================= HOME ================= -->
@@ -251,7 +307,7 @@
       <div class="docline">║<span class="inner">  <span style="color:var(--blu)">█   █ </span><span style="color:var(--grn)">  █   </span><span style="color:var(--red)">█  ██ </span><span style="color:var(--mag)">█   █ </span><span style="color:var(--brn)">      </span><span style="color:var(--cyn)">  █   </span><span style="color:var(--blu)">█     </span><span style="color:var(--grn)">█   █ </span><span style="color:var(--red)">█     </span><span style="color:var(--mag)">█     </span><span style="color:var(--brn)">█     </span>  </span>║</div>
       <div class="docline">║<span class="inner">  <span style="color:var(--blu)">█   █ </span><span style="color:var(--grn)">█████ </span><span style="color:var(--red)">█   █ </span><span style="color:var(--mag)">████  </span><span style="color:var(--brn)">      </span><span style="color:var(--cyn)">  █   </span><span style="color:var(--blu)">█████ </span><span style="color:var(--grn)">█   █ </span><span style="color:var(--red)">█     </span><span style="color:var(--mag)">█████ </span><span style="color:var(--brn)">█████ </span>  </span>║</div>
       <div class="docline">║<span class="inner">                                                                      </span>║</div>
-      <div class="docline">║<span class="inner"><span style="color:var(--dgy)">   three and a half engines for thinking · an offering in 16 colors</span>   </span>║</div>
+      <div class="docline">║<span class="inner"><span style="color:var(--dgy)">   five and a half engines for thinking · an offering in 16 colors</span>    </span>║</div>
       <div class="docline">║<span class="inner">                                                                      </span>║</div>
       <div class="docline">╟──────────────────────────────────────────────────────────────────────╢</div>
       <div class="docline">║<span class="inner">                                                                      </span>║</div>
@@ -277,6 +333,12 @@
       <div class="docline">║<span class="inner">  <span style="color:var(--mag)">▄▀▀▄ </span>  <span style="color:var(--mag)">▶ </span><span style="color:var(--mag);font-weight:bold;text-decoration:underline">TURMITE 3D</span>                                                 </span>║</div>
       <div class="docline">║<span class="inner">  <span style="color:var(--mag)">▌██▐ </span>    <span style="color:var(--blk)">The walker gains a third axis: a 10,000³ graph-space torus.</span></span>║</div>
       <div class="docline">║<span class="inner">  <span style="color:var(--mag)">▀▄▄▀ </span>    <span style="color:var(--dgy)">Same zoo, recalibrated for sheets, scaffolds, and flight.</span>  </span>║</div>
+      </div>
+      <div class="docline">║<span class="inner">                                                                      </span>║</div>
+      <div class="docEntry" data-view="sphinx">
+      <div class="docline">║<span class="inner">  <span style="color:var(--cyn)"> ▄▀▄ </span>  <span style="color:var(--cyn)">▶ </span><span style="color:var(--cyn);font-weight:bold;text-decoration:underline">THE SPHINX</span>                                                 </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--cyn)">▐▀█▀▌</span>    <span style="color:var(--blk)">An endless well of generated logic puzzles, Mensa-style.</span>   </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--cyn)"> ▀▀▀ </span>    <span style="color:var(--dgy)">Series, matrices, odd ones out, syllogisms. It adapts.</span>     </span>║</div>
       </div>
       <div class="docline">║<span class="inner">                                                                      </span>║</div>
       <div class="docline">╟──────────────────────────────────────────────────────────────────────╢</div>
@@ -505,6 +567,39 @@
   </div>
 
   </div><!-- /t3View -->
+
+  <!-- ================= THE SPHINX ================= -->
+  <div id="sxView" class="view">
+    <div id="sxInner">
+      <div class="deco">&#9608;&#9619;&#9618;&#9617; THE SPHINX &#9617;&#9618;&#9619;&#9608;</div>
+      <div class="sub">An endless well of generated reasoning puzzles, in the manner of the Mensa test.</div>
+      <div class="sxBar">
+        <span class="lab">mode</span>
+        <button class="sxMode cur" data-m="endless">Endless</button>
+        <button class="sxMode" data-m="trial" title="25 questions, 20 minutes, difficulty ramps up">Trial: 25 in 20:00</button>
+        <span class="lab">difficulty</span>
+        <button class="sxDiff cur" data-d="0">Adaptive</button>
+        <button class="sxDiff" data-d="2">Easy</button>
+        <button class="sxDiff" data-d="5">Medium</button>
+        <button class="sxDiff" data-d="8">Hard</button>
+      </div>
+      <div class="sxBar" id="sxCats"></div>
+      <div id="sxHud"><span id="sxHudL"></span><span id="sxHudR"></span></div>
+      <div id="sxCard">
+        <div><span id="sxTag"></span> <span id="sxLvl" style="color:var(--dgy)"></span></div>
+        <div id="sxPrompt"></div>
+        <div id="sxFig"></div>
+        <div id="sxOpts"></div>
+        <div id="sxFeed"></div>
+        <div id="sxExplain"></div>
+        <div class="actions" style="justify-content:center;margin-top:12px">
+          <button id="sxNext">Skip</button>
+        </div>
+      </div>
+      <div id="sxStats"></div>
+      <div id="sxKeys">keys: 1&ndash;6 or A&ndash;F to answer &middot; Enter for next &middot; <span id="sxReset" style="color:var(--blu);cursor:pointer;text-decoration:underline">reset stats</span></div>
+    </div>
+  </div>
 
   <div id="statusbar"><span id="statusText"></span> <span class="curs"></span></div>
 
@@ -1365,13 +1460,14 @@ loop();
    ============================================================================ */
 
 /* ---------------- router ---------------- */
-const VIEWS = { home: "homeView", turmite: "turmiteView", t3d: "t3View", eca: "ecaView", lights: "loView" };
+const VIEWS = { home: "homeView", turmite: "turmiteView", t3d: "t3View", eca: "ecaView", lights: "loView", sphinx: "sxView" };
 const STATUS = {
   home:    "MIND TEMPLE v1.0  \u2014  pick an engine. The evolve search, once started, keeps computing in every room.",
   turmite: "TURMITE LAB  \u2014  drag to pan, wheel to zoom. [Rule] edits the law; [Evolve] breeds a zoo of order.",
   t3d: "TURMITE 3D  \u2014  drag to orbit, shift-drag to pan, wheel to zoom. A walker with a frame in a 10,000\u00b3 torus.",
   eca:     "RULE SCROLLS  \u2014  256 possible one-dimensional laws. Type a number 0..255 or walk the famous ones.",
-  lights:  "LIGHTS OUT  \u2014  each press flips a cross. Parity is truth: order of presses never matters."
+  lights:  "LIGHTS OUT  \u2014  each press flips a cross. Parity is truth: order of presses never matters.",
+  sphinx:  "THE SPHINX  \u2014  endless generated logic puzzles. Keys 1\u20136 answer, Enter moves on. Difficulty adapts to you."
 };
 window.MT_VIEW = "home";
 function showView(name) {
@@ -1382,6 +1478,7 @@ function showView(name) {
     b.classList.toggle("cur", b.dataset.view === name));
   document.getElementById("statusText").textContent = STATUS[name];
   if (name === "eca") ecaEnsure();
+  if (name === "sphinx" && window.sxEnsure) window.sxEnsure();
 }
 document.querySelectorAll("[data-view]").forEach(el =>
   el.addEventListener("click", () => showView(el.dataset.view)));
@@ -2592,6 +2689,727 @@ if (!ant) resetSim();
 fitView();
 loop();
 
+})();
+</script>
+<script>
+/* ============================================================================
+   THE SPHINX — an endless well of generated reasoning puzzles
+   (number & letter series, Raven-style matrices, odd-one-out, figure series,
+   symbol algebra, analogies, number grids, ordering, syllogisms).
+   Every puzzle is generated on the fly; difficulty adapts to your answers.
+   ============================================================================ */
+(function sphinx() {
+"use strict";
+const $ = id => document.getElementById(id);
+const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const chance = p => Math.random() < p;
+const shuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const LET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const KEYS = "ABCDEF";
+const ORD = n => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
+const sgn = (c) => (c < 0 ? "− " : "+ ") + Math.abs(c);
+const V = v => `<span class="v">${v}</span>`;
+
+/* correct value + distractor candidates -> shuffled unique options */
+function buildOpts(correct, cands, render, n, filler) {
+  n = n || 6;
+  const key = v => JSON.stringify(v);
+  const seen = new Set([key(correct)]);
+  const out = [correct];
+  const add = c => { if (c == null || out.length >= n) return; if (typeof c === "number" && !isFinite(c)) return; const k = key(c); if (seen.has(k)) return; seen.add(k); out.push(c); };
+  cands.forEach(add);
+  let g = 0;
+  while (out.length < n && filler && g++ < 400) add(filler());
+  const order = shuf(out.map((_, i) => i));
+  return { options: order.map(i => render(out[i])), answer: order.indexOf(0) };
+}
+const numFill = (ans, span) => () => ans + ri(-span, span);
+const numSpan = ans => Math.max(6, Math.round(Math.abs(ans) * 0.15));
+
+/* ------------------------------ figure drawing ------------------------------ */
+let uid = 0;
+const SHAPES = ["circle", "triangle", "square", "diamond", "pentagon", "hexagon", "star", "cross"];
+const SHAPE_PL = { circle: "circles", triangle: "triangles", square: "squares", diamond: "diamonds", pentagon: "pentagons", hexagon: "hexagons", star: "stars", cross: "crosses" };
+const FILLS = ["none", "hatch", "solid"];
+const FILLNAME = { none: "empty", hatch: "striped", solid: "black" };
+const SIZES = [0.55, 0.78, 1];
+const SIZENAME = { 0.55: "small", 0.78: "medium", 1: "large" };
+const LAYOUT = { 1: [[50, 50]], 2: [[29, 50], [71, 50]], 3: [[50, 29], [29, 71], [71, 71]], 4: [[30, 30], [70, 30], [30, 70], [70, 70]], 5: [[27, 27], [73, 27], [50, 50], [27, 73], [73, 73]] };
+const BASER = { 1: 34, 2: 18, 3: 17, 4: 16, 5: 13 };
+
+function rotPts(pts, cx, cy, rot) {
+  const a = rot * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+  return pts.map(([x, y]) => (cx + x * c - y * s).toFixed(2) + "," + (cy + x * s + y * c).toFixed(2)).join(" ");
+}
+function ngon(n, r, off) { const p = []; for (let i = 0; i < n; i++) { const a = (off - 90 + 360 * i / n) * Math.PI / 180; p.push([r * Math.cos(a), r * Math.sin(a)]); } return p; }
+function shapeEl(shape, cx, cy, r, rot, fill) {
+  const st = `fill="${fill}" stroke="#000" stroke-width="2.4" stroke-linejoin="round"`;
+  let pts;
+  switch (shape) {
+    case "circle": return `<circle cx="${cx}" cy="${cy}" r="${(r * 0.9).toFixed(2)}" ${st}/>`;
+    case "triangle": pts = ngon(3, r, 0).map(([x, y]) => [x, y + r * 0.12]); break;
+    case "square": pts = ngon(4, r * 0.95, 45); break;
+    case "diamond": pts = ngon(4, r, 0); break;
+    case "pentagon": pts = ngon(5, r, 0); break;
+    case "hexagon": pts = ngon(6, r, 0); break;
+    case "star": pts = []; for (let i = 0; i < 10; i++) { const rr = i % 2 ? r * 0.45 : r, a = (-90 + 36 * i) * Math.PI / 180; pts.push([rr * Math.cos(a), rr * Math.sin(a)]); } break;
+    case "cross": { const w = r * 0.34; pts = [[-w, -r], [w, -r], [w, -w], [r, -w], [r, w], [w, w], [w, r], [-w, r], [-w, w], [-r, w], [-r, -w], [-w, -w]]; break; }
+  }
+  return `<polygon points="${rotPts(pts, cx, cy, rot)}" ${st}/>`;
+}
+function hatchDef(id) {
+  return `<defs><pattern id="${id}" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="#fff"/><line x1="0" y1="0" x2="0" y2="5" stroke="#000" stroke-width="2.2"/></pattern></defs>`;
+}
+function figSVG(s, px) {
+  const id = "sxh" + (++uid);
+  const fill = s.fill === "solid" ? "#000" : s.fill === "hatch" ? `url(#${id})` : "#fff";
+  const r = BASER[s.count] * s.size;
+  let body = "";
+  for (const [x, y] of LAYOUT[s.count]) body += shapeEl(s.shape, x, y, r, 0, fill);
+  return `<svg width="${px}" height="${px}" viewBox="0 0 100 100">${hatchDef(id)}${body}</svg>`;
+}
+const spec = (shape, count, fill, size) => ({ shape, count, fill, size });
+
+/* ================================ GENERATORS ================================ */
+
+/* ---- number series ---- */
+const PRIMES = []; for (let n = 2; PRIMES.length < 60; n++) { let p = true; for (let d = 2; d * d <= n; d++) if (n % d === 0) { p = false; break; } if (p) PRIMES.push(n); }
+function seqArr(n, f) { const a = []; for (let i = 0; i < n; i++) a.push(f(i, a)); return a; }
+const SEQ = [
+  { min: 1, make(L, N) { let d = ri(2, L < 3 ? 5 : L < 6 ? 9 : 15); const neg = L >= 3 && chance(0.35); if (neg) d = -d; const a = neg ? ri(60, 99) : ri(1, 25);
+      return { t: seqArr(N, i => a + i * d), ex: neg ? `Subtract ${-d} each step.` : `Add ${d} each step.` }; } },
+  { min: 2, make(L, N) { const a = ri(1, L < 5 ? 3 : 5), r = ri(2, L < 5 ? 3 : 4); return { t: seqArr(N, i => a * r ** i), ex: `Multiply by ${r} each step.` }; } },
+  { min: 2, make(L, N) { const p = ri(3, L < 5 ? 7 : 12), q = ri(1, p - 1), a = ri(1, 15);
+      return { t: seqArr(N, (i, t) => i ? t[i - 1] + (i % 2 ? p : -q) : a), ex: `Alternate +${p} and −${q}.` }; } },
+  { min: 3, make(L, N) { const d0 = ri(1, 4), dd = ri(1, L < 6 ? 2 : 4), a = ri(1, 15);
+      return { t: seqArr(N, (i, t) => i ? t[i - 1] + d0 + (i - 1) * dd : a), ex: `The gaps grow by ${dd} each time: +${d0}, +${d0 + dd}, +${d0 + 2 * dd}, …` }; } },
+  { min: 3, make(L, N) { const k = ri(1, L < 5 ? 5 : 11); return { t: seqArr(N, i => (i + k) ** 2), ex: `Consecutive squares: ${k}², ${k + 1}², ${k + 2}², …` }; } },
+  { min: 4, make(L, N) { const a = ri(1, 5), b = ri(a, 9); return { t: seqArr(N, (i, t) => i === 0 ? a : i === 1 ? b : t[i - 1] + t[i - 2]), ex: `Each term is the sum of the two before it.` }; } },
+  { min: 4, make(L, N) { const m = L >= 6 && chance(0.4) ? 3 : 2, c = pick([-1, 1, 2, 3]), a = ri(2, 5);
+      return { t: seqArr(N, (i, t) => i ? t[i - 1] * m + c : a), ex: `Multiply by ${m}, then ${c < 0 ? "subtract " + (-c) : "add " + c}.` }; } },
+  { min: 4, make(L, N) { const k = ri(1, 8); return { t: seqArr(N, i => (i + k) * (i + k + 1) / 2), ex: `Triangular numbers: the gaps are +${k + 1}, +${k + 2}, +${k + 3}, …` }; } },
+  { min: 5, make(L, N) { const m = pick([2, 3]), c = ri(1, 6), a = ri(1, 5);
+      return { t: seqArr(N, (i, t) => i ? (i % 2 ? t[i - 1] * m : t[i - 1] + c) : a), ex: `Alternate ×${m} and +${c}.` }; } },
+  { min: 5, inter: true, make(L, N) { const a1 = ri(1, 20), d1 = ri(2, 7), a2 = ri(30, 70), d2 = pick([-1, 1]) * ri(2, 6);
+      return { t: seqArr(N, i => i % 2 === 0 ? a1 + (i / 2) * d1 : a2 + ((i - 1) / 2) * d2),
+        ex: `Two series are interleaved: ${a1}, ${a1 + d1}, … (+${d1}) and ${a2}, ${a2 + d2}, … (${d2 > 0 ? "+" : "−"}${Math.abs(d2)}).` }; } },
+  { min: 6, make(L, N) { const k = ri(1, 4); return { t: seqArr(N, i => (i + k) ** 3), ex: `Consecutive cubes: ${k}³, ${k + 1}³, ${k + 2}³, …` }; } },
+  { min: 6, make(L, N) { const s = ri(0, 22); return { t: seqArr(N, i => PRIMES[s + i]), ex: `Consecutive prime numbers.` }; } },
+  { min: 6, make(L, N) { const k = ri(1, 8); return { t: seqArr(N, i => (i + k) * (i + k + 1)), ex: `n × (n + 1): ${k}×${k + 1}, ${k + 1}×${k + 2}, ${k + 2}×${k + 3}, …` }; } },
+  { min: 7, make(L, N) { const k = ri(2, 8), c = pick([-3, -2, -1, 1, 2, 3, 5]);
+      return { t: seqArr(N, i => (i + k) ** 2 + c), ex: `Squares ${c > 0 ? "plus" : "minus"} ${Math.abs(c)}: ${k}² ${sgn(c)}, ${k + 1}² ${sgn(c)}, …` }; } },
+  { min: 7, make(L, N) { const a = ri(1, 3), m0 = ri(1, 2);
+      return { t: seqArr(N, (i, t) => i ? t[i - 1] * (m0 + i - 1) : a), ex: `Multiply by ${m0}, then ${m0 + 1}, then ${m0 + 2}, …` }; } },
+  { min: 8, make(L, N) { const a = ri(0, 2), b = ri(1, 3), c = ri(1, 4);
+      return { t: seqArr(N, (i, t) => i < 3 ? [a, b, c][i] : t[i - 1] + t[i - 2] + t[i - 3]), ex: `Each term is the sum of the three before it.` }; } },
+];
+function weighted(list, L) {
+  const ok = list.filter(r => r.min <= L);
+  const w = ok.map(r => 1 + (r.min >= L - 2 ? 2 : 0));
+  let x = Math.random() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < ok.length; i++) if ((x -= w[i]) < 0) return ok[i];
+  return ok[ok.length - 1];
+}
+function genSeq(L) {
+  const rule = weighted(SEQ, L);
+  const N = rule.inter ? 8 : 6;
+  const { t, ex } = rule.make(L, N);
+  let idx = N - 1;
+  if (L >= 6 && chance(0.3)) idx = ri(2, N - 2);
+  const ans = t[idx];
+  const shown = t.map((v, i) => i === idx ? `<span class="sxQ">?</span>` : v).join(", ");
+  const cont = idx >= 2 ? 2 * t[idx - 1] - t[idx - 2] : null;
+  const o = buildOpts(ans, [ans + 1, ans - 1, ans + 2, ans - 2, cont, idx >= 1 ? t[idx - 1] * 2 : null, ans + 10], V, 6, numFill(ans, numSpan(ans)));
+  return { prompt: idx === N - 1 ? "Which number comes next?" : "Which number is missing?", fig: `<div class="sxSeq">${shown}</div>`, ...o, explain: ex };
+}
+
+/* ---- letter series ---- */
+function genLetters(L) {
+  for (let tries = 0; tries < 100; tries++) {
+    const kinds = ["step"]; if (L >= 2) kinds.push("back"); if (L >= 3) kinds.push("grow"); if (L >= 4) kinds.push("alt"); if (L >= 5) kinds.push("inter", "inter");
+    const kind = pick(kinds);
+    let t, ex, N = 6;
+    if (kind === "step") { const s = ri(1, L < 3 ? 3 : 5), a = ri(0, 25 - s * 5); t = seqArr(N, i => a + i * s); ex = `Move forward ${s} letter${s > 1 ? "s" : ""} each step.`; }
+    else if (kind === "back") { const s = ri(1, 4), a = ri(s * 5, 25); t = seqArr(N, i => a - i * s); ex = `Move back ${s} letter${s > 1 ? "s" : ""} each step.`; }
+    else if (kind === "grow") { const d0 = ri(1, 2), a = ri(0, 25 - (5 * d0 + 10)); t = seqArr(N, (i, x) => i ? x[i - 1] + d0 + i - 1 : a); ex = `The skips grow by one: +${d0}, +${d0 + 1}, +${d0 + 2}, …`; }
+    else if (kind === "alt") { const p = ri(1, 4), q = L >= 6 && chance(0.5) ? -ri(1, p) : ri(1, 4); if (p === q) continue; const a = ri(0, 25); t = seqArr(N, (i, x) => i ? x[i - 1] + (i % 2 ? p : q) : a);
+      ex = `Alternate ${p > 0 ? "+" : "−"}${Math.abs(p)} and ${q > 0 ? "+" : "−"}${Math.abs(q)} letters.`; }
+    else { N = 8; const a1 = ri(0, 8), d1 = ri(1, 4), a2 = ri(15, 25), d2 = -ri(1, 3); t = seqArr(N, i => i % 2 === 0 ? a1 + (i / 2) * d1 : a2 + ((i - 1) / 2) * d2);
+      ex = `Two series interleaved: ${LET[a1]}, ${LET[a1 + d1]}, … (forward ${d1}) and ${LET[a2]}, ${LET[a2 + d2]}, … (back ${-d2}).`; }
+    if (t.some(x => x < 0 || x > 25)) continue;
+    const ans = t[N - 1];
+    const shown = t.slice(0, N - 1).map(i => LET[i]).join(" ") + ` <span class="sxQ">?</span>`;
+    const c = [ans + 1, ans - 1, ans + 2, ans - 2, 2 * t[N - 2] - t[N - 3]].filter(x => x >= 0 && x <= 25);
+    const o = buildOpts(ans, c, i => V(LET[i]), 6, () => clamp(ans + ri(-5, 5), 0, 25));
+    return { prompt: "Which letter comes next?", fig: `<div class="sxSeq">${shown}</div>`, ...o, explain: ex };
+  }
+}
+
+/* ---- Raven-style 3x3 matrix ---- */
+function genMatrix(L) {
+  const nVar = L <= 2 ? 1 : L <= 4 ? 2 : L <= 7 ? 3 : 4;
+  const attrs = shuf(["shape", "count", "fill", "size"]).slice(0, nVar);
+  const base = spec(pick(SHAPES), ri(1, 3), pick(FILLS), pick([0.78, 1]));
+  const g = [0, 1, 2].map(() => [0, 1, 2].map(() => ({ ...base })));
+  const ex = [];
+  const domain = {};
+  for (const a of attrs) {
+    let rule, vals;
+    if (a === "shape") { vals = shuf(SHAPES).slice(0, 3); rule = pick(["row", "col", "latin"]); }
+    if (a === "fill") { vals = shuf(FILLS); rule = pick(["row", "col", "latin"]); }
+    if (a === "size") { vals = chance(0.5) ? SIZES.slice() : SIZES.slice().reverse(); rule = pick(["prog", "latin", "row"]); }
+    if (a === "count") { vals = shuf([1, 2, 3]); rule = pick(L >= 5 ? ["prog", "latin", "row", "prog"] : ["prog", "latin", "row"]); }
+    domain[a] = vals;
+    const sh = pick([1, 2]), offs = shuf([0, 1, 2]);
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+      let v;
+      if (rule === "row") v = vals[r];
+      else if (rule === "col") v = vals[c];
+      else if (rule === "latin") v = vals[(c + sh * r) % 3];
+      else if (a === "count") v = 1 + offs[r] + c;   // each row counts up by one
+      else v = vals[c];                              // size progression
+      g[r][c][a] = v;
+    }
+    const nm = { shape: "shape", fill: "shading", size: "size", count: "number of shapes" }[a];
+    const list = a === "shape" ? vals.map(s => SHAPE_PL[s]).join(", ") : a === "fill" ? vals.map(f => FILLNAME[f]).join(", ") : "";
+    if (rule === "row") ex.push(`Each row keeps a single ${nm}${list ? " (" + list + ")" : ""}.`);
+    else if (rule === "col") ex.push(`Each column keeps a single ${nm}${list ? " (" + list + ")" : ""}.`);
+    else if (rule === "latin") ex.push(`Every row and column contains each ${nm} exactly once${list ? " (" + list + ")" : ""}.`);
+    else if (a === "count") ex.push(`Within each row, the number of shapes goes up by one from left to right.`);
+    else ex.push(`Size goes ${vals[0] < vals[2] ? "up" : "down"} from left to right.`);
+  }
+  if (nVar < 4) ex.push("Everything else stays the same.");
+  const ans = g[2][2];
+  const cands = [];
+  const alt = { shape: domain.shape || shuf(SHAPES).slice(0, 3), fill: FILLS, size: SIZES, count: [ans.count - 1, ans.count + 1, ans.count + 2].filter(n => n >= 1 && n <= 5) };
+  for (const a of shuf(["shape", "fill", "size", "count"])) for (const v of alt[a]) if (v !== ans[a]) cands.push({ ...ans, [a]: v });
+  cands.unshift({ ...g[2][1] }, { ...g[1][2] });
+  const o = buildOpts(ans, cands.slice(0, 2).concat(shuf(cands.slice(2))), s => figSVG(s, 66), 6);
+  let cells = "";
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++)
+    cells += (r === 2 && c === 2) ? `<div class="miss">?</div>` : `<div>${figSVG(g[r][c], 76)}</div>`;
+  return { prompt: "Which figure completes the pattern?", fig: `<div class="sxMatrix">${cells}</div>`, ...o, explain: ex.join(" ") };
+}
+
+/* ---- odd one out: figures ---- */
+const EVEN = ["square", "diamond", "hexagon"], ODDS = ["triangle", "pentagon"];
+function genOddFig(L) {
+  const targets = L >= 6 ? ["shape", "fill", "count", "size", "parity"] : L >= 3 ? ["shape", "fill", "count", "size"] : ["shape", "fill", "count"];
+  const target = pick(targets);
+  const noiseN = L <= 2 ? 0 : L <= 4 ? 1 : L <= 7 ? 2 : 3;
+  const dom = { shape: SHAPES, fill: FILLS, count: [1, 2, 3, 4], size: SIZES };
+  for (let tries = 0; tries < 300; tries++) {
+    const tA = target === "parity" ? "shape" : target;
+    const noise = shuf(["shape", "fill", "count", "size"].filter(a => a !== tA)).slice(0, noiseN);
+    const base = spec(pick(SHAPES), ri(1, 4), pick(FILLS), pick([0.78, 1]));
+    if (target === "size") base.count = ri(1, 2);
+    const it = [0, 1, 2, 3, 4].map(() => ({ ...base }));
+    for (const a of noise) it.forEach(x => x[a] = pick(dom[a]));
+    const odd = ri(0, 4);
+    let ex;
+    if (target === "parity") {
+      const evenMaj = chance(0.5), maj = evenMaj ? EVEN : ODDS, min = evenMaj ? ODDS : EVEN;
+      it.forEach((x, i) => x.shape = pick(i === odd ? min : maj));
+      const ms = new Set(it.filter((_, i) => i !== odd).map(x => x.shape));
+      if (ms.size < 2) continue;
+      ex = `Four have an ${evenMaj ? "even" : "odd"} number of sides; this one has an ${evenMaj ? "odd" : "even"} number.`;
+    } else {
+      const v = base[tA]; let w; do { w = pick(dom[tA]); } while (w === v);
+      it[odd][tA] = w;
+      const d = x => tA === "shape" ? SHAPE_PL[x] : tA === "fill" ? FILLNAME[x] : tA === "size" ? SIZENAME[x] : x + (x === 1 ? " shape" : " shapes");
+      ex = tA === "count" ? `Four contain ${d(v)}; this one has ${d(w)}.` : tA === "shape" ? `Four are ${d(v)}; this one is a${/^[aeiou]/.test(w) ? "n" : ""} ${w}.` : `Four are ${d(v)}; this one is ${d(w)}.`;
+    }
+    // no other attribute may single out an item
+    let bad = false;
+    for (const a of ["shape", "fill", "count", "size"]) {
+      if (a === tA && target !== "parity") continue;
+      const cnt = {}; it.forEach(x => cnt[x[a]] = (cnt[x[a]] || 0) + 1);
+      const vs = Object.values(cnt);
+      if (vs.includes(4) && vs.includes(1)) bad = true;
+    }
+    if (bad) continue;
+    return { prompt: "Which figure is the odd one out?", fig: "", options: it.map(s => figSVG(s, 66)), answer: odd, explain: ex };
+  }
+  return genOddNum(L);
+}
+
+/* ---- odd one out: numbers ---- */
+const isPrime = n => { if (n < 2) return false; for (let d = 2; d * d <= n; d++) if (n % d === 0) return false; return true; };
+const dsum = n => String(n).split("").reduce((a, b) => a + +b, 0);
+const isSq = n => Math.round(Math.sqrt(n)) ** 2 === n;
+const TRI = []; for (let k = 1; k < 20; k++) TRI.push(k * (k + 1) / 2);
+function genOddNum(L) {
+  const types = [];
+  types.push(() => { const k = pick(L < 4 ? [3, 4, 5] : [6, 7, 8, 9, 11, 12, 13]), hi = L < 4 ? 12 : 20;
+    const ms = shuf(Array.from({ length: hi - 1 }, (_, i) => k * (i + 2))).slice(0, 4);
+    let o; do { o = ri(k * 2, k * hi); } while (o % k === 0);
+    return [ms, o, `Four are multiples of ${k}; ${o} is not.`]; });
+  types.push(() => { const hi = L < 5 ? 10 : 20; const ms = shuf(Array.from({ length: hi - 2 }, (_, i) => (i + 3) ** 2)).slice(0, 4);
+    let o; do { o = (ri(3, hi)) ** 2 + pick([-2, -1, 1, 2, 3]); } while (isSq(o)); return [ms, o, `Four are perfect squares; ${o} is not.`]; });
+  if (L >= 3) types.push(() => { const pool = PRIMES.filter(p => p > 10 && p < (L < 6 ? 60 : 160)); const ms = shuf(pool).slice(0, 4);
+    let o; do { o = ri(11, L < 6 ? 60 : 160) | 1; } while (isPrime(o) || o % 5 === 0 || (L >= 5 && o % 3 === 0));
+    let f = 3; while (o % f) f += 2; return [ms, o, `Four are prime; ${o} = ${f} × ${o / f}.`]; });
+  if (L >= 4) types.push(() => { const ms = shuf([4, 8, 16, 32, 64, 128, 256, 512, 1024]).slice(0, 4); const o = pick([12, 24, 48, 96, 192, 384, 20, 40, 80]);
+    return [ms, o, `Four are powers of 2; ${o} is not.`]; });
+  if (L >= 4) types.push(() => { const pal = []; for (let a = 1; a <= 9; a++) for (let b = 0; b <= 9; b++) pal.push(a * 101 + b * 10);
+    const ms = shuf(pal).slice(0, 4); let o; do { o = ri(100, 999); } while (String(o)[0] === String(o)[2]); return [ms, o, `Four read the same backwards; ${o} does not.`]; });
+  if (L >= 5) types.push(() => { const S = ri(9, 15); const pool = []; for (let n = 19; n < 400; n++) if (dsum(n) === S) pool.push(n);
+    const ms = shuf(pool).slice(0, 4); const T = S + pick([-1, 1]); let o; do { o = ri(19, 399); } while (dsum(o) !== T);
+    return [ms, o, `The digits of four numbers add up to ${S}; ${o}'s add up to ${T}.`]; });
+  if (L >= 6) types.push(() => { const ms = shuf([8, 27, 64, 125, 216, 343, 512, 729]).slice(0, 4); const o = pick([36, 49, 81, 100, 144, 196, 256, 400]);
+    return [ms, o, `Four are perfect cubes; ${o} is a square, not a cube.`]; });
+  if (L >= 7) types.push(() => { const ms = shuf(TRI.slice(3, 15)).slice(0, 4); let o; do { o = ri(10, 120); } while (TRI.includes(o));
+    return [ms, o, `Four are triangular numbers (1, 3, 6, 10, 15, …); ${o} is not.`]; });
+  const [ms, o, ex] = pick(types)();
+  const all = shuf(ms.concat([o]));
+  return { prompt: "Which number is the odd one out?", fig: "", options: all.map(V), answer: all.indexOf(o), explain: ex };
+}
+function genOdd(L) { return chance(0.55) ? genOddFig(L) : genOddNum(L); }
+
+/* ---- figure series ---- */
+const RING8 = [[16, 16], [50, 16], [84, 16], [84, 50], [84, 84], [50, 84], [16, 84], [16, 50]];
+const RING4 = [[16, 16], [84, 16], [84, 84], [16, 84]];
+const QUAD = [[4, 4], [50, 4], [50, 50], [4, 50]];
+function panelSVG(p, px) {
+  const ring = p.N === 8 ? RING8 : RING4;
+  let s = `<svg width="${px}" height="${px}" viewBox="0 0 100 100"><rect x="4" y="4" width="92" height="92" fill="#fff" stroke="#000" stroke-width="2.4"/>`;
+  if (p.q >= 0) s += `<rect x="${QUAD[p.q][0]}" y="${QUAD[p.q][1]}" width="46" height="46" fill="#AAAAAA"/><rect x="4" y="4" width="92" height="92" fill="none" stroke="#000" stroke-width="2.4"/>`;
+  s += `<path d="M50 24 L63 41 L55 41 L55 76 L45 76 L45 41 L37 41 Z" fill="#000" transform="rotate(${p.rot} 50 50)"/>`;
+  if (p.pos >= 0) s += `<circle cx="${ring[p.pos][0]}" cy="${ring[p.pos][1]}" r="7" fill="#fff" stroke="#000" stroke-width="2.4"/>`;
+  return s + "</svg>";
+}
+function genSeries(L) {
+  const nC = L <= 3 ? 1 : L <= 6 ? 2 : 3;
+  const ch = shuf(["arrow", "dot", "shade"]).slice(0, nC);
+  const N = L >= 5 ? 8 : 4;
+  const r0 = pick([0, 45, 90, 135, 180, 225, 270, 315]);
+  const dr = ch.includes("arrow") ? pick(L < 5 ? [90, -90] : [45, -45, 90, 135, -135]) : 0;
+  const hasDot = ch.includes("dot") || chance(0.5), p0 = ri(0, N - 1);
+  const dp = ch.includes("dot") ? pick(N === 8 ? [1, 2, 3, -1, -2] : [1, -1]) : 0;
+  const hasQ = ch.includes("shade") || chance(0.4), q0 = ri(0, 3);
+  const dq = ch.includes("shade") ? pick([1, -1, 2]) : 0;
+  const md = (x, m) => ((x % m) + m) % m;
+  const at = i => ({ rot: md(r0 + i * dr, 360), pos: hasDot ? md(p0 + i * dp, N) : -1, q: hasQ ? md(q0 + i * dq, 4) : -1, N });
+  const ans = at(4);
+  const cands = [at(3), at(5)];
+  for (const d of [45, -45, 90, 180]) cands.push({ ...ans, rot: md(ans.rot + d, 360) });
+  if (hasDot) for (const d of [1, -1, 2]) cands.push({ ...ans, pos: md(ans.pos + d, N) });
+  if (hasQ) for (const d of [1, -1, 2]) cands.push({ ...ans, q: md(ans.q + d, 4) });
+  const o = buildOpts(ans, shuf(cands), p => panelSVG(p, 62), 6);
+  const cw = (d, unit) => `${Math.abs(d)} ${unit}${Math.abs(d) > 1 ? "s" : ""} ${d > 0 ? "clockwise" : "counter-clockwise"}`;
+  const ex = [];
+  if (dr) ex.push(`The arrow turns ${Math.abs(dr)}° ${dr > 0 ? "clockwise" : "counter-clockwise"} each step.`);
+  if (dp) ex.push(`The dot moves ${cw(dp, N === 8 ? "position" : "corner")} each step.`);
+  if (dq) ex.push(`The shaded quarter moves ${cw(dq, "quarter")} each step.`);
+  ex.push("Anything else stays put.");
+  let fig = `<div class="sxRow">`;
+  for (let i = 0; i < 4; i++) fig += panelSVG(at(i), 62);
+  fig += `<div class="sxQbox">?</div></div>`;
+  return { prompt: "Which panel comes next?", fig, ...o, explain: ex.join(" ") };
+}
+
+/* ---- symbol algebra ---- */
+const SYM = [["▲", "var(--blu)"], ["●", "var(--red)"], ["■", "var(--grn)"], ["◆", "var(--mag)"], ["★", "var(--brn)"]];
+function genSymbols(L) {
+  const k = L <= 2 ? 2 : L <= 5 ? 3 : L <= 8 ? 4 : 5;
+  const sy = shuf(SYM).slice(0, k);
+  const maxV = L <= 3 ? 9 : L <= 6 ? 12 : 15;
+  const v = shuf(Array.from({ length: maxV - 1 }, (_, i) => i + 2)).slice(0, k);
+  const S = i => `<span class="sxSym" style="color:${sy[i][1]}">${sy[i][0]}</span>`;
+  const eqs = [];
+  if (L >= 5 && chance(0.4)) eqs.push([`${S(0)} × ${S(0)}`, v[0] * v[0]]);
+  else { const m = ri(2, 3); eqs.push([Array(m).fill(S(0)).join(" + "), m * v[0]]); }
+  for (let i = 1; i < k; i++) {
+    const j = ri(0, i - 1), op = pick(L < 3 ? ["+"] : L < 6 ? ["+", "−", "2+"] : ["+", "−", "×", "2+"]);
+    if (op === "+") eqs.push([`${S(i)} + ${S(j)}`, v[i] + v[j]]);
+    else if (op === "2+") eqs.push([`${S(i)} + ${S(i)} + ${S(j)}`, 2 * v[i] + v[j]]);
+    else if (op === "×") eqs.push([`${S(i)} × ${S(j)}`, v[i] * v[j]]);
+    else if (v[i] > v[j]) eqs.push([`${S(i)} − ${S(j)}`, v[i] - v[j]]);
+    else eqs.push([`${S(j)} − ${S(i)}`, v[j] - v[i]]);
+  }
+  const shown = L >= 4 ? shuf(eqs) : eqs;
+  let q, ans;
+  if (L <= 2) { q = S(k - 1); ans = v[k - 1]; }
+  else if (L < 6) { const a = k - 1, b = ri(0, k - 2); q = `${S(a)} + ${S(b)}`; ans = v[a] + v[b]; }
+  else { const [a, b, c] = shuf([...Array(k).keys()]).slice(0, 3); const x = v[a] * v[b] - v[c];
+    if (x > 0) { q = `${S(a)} × ${S(b)} − ${S(c)}`; ans = x; } else { q = `${S(a)} × ${S(b)} + ${S(c)}`; ans = v[a] * v[b] + v[c]; } }
+  const fig = `<div class="sxEq">${shown.map(([l, r]) => `<div>${l} = ${r}</div>`).join("")}<div class="sxAsk">${q} = <span class="sxQ">?</span></div></div>`;
+  const o = buildOpts(ans, [ans + 1, ans - 1, ans + 2, ans - 2, ans + v[0], v[k - 1]], V, 6, numFill(ans, numSpan(ans)));
+  return { prompt: "Each symbol stands for a whole number. Solve for the last line.", fig, ...o,
+    explain: sy.map((_, i) => `${S(i)} = ${v[i]}`).join(", ") + (L >= 6 ? " (multiply before adding or subtracting)." : ".") };
+}
+
+/* ---- number analogies ---- */
+function anaPool() {
+  const P = [];
+  for (let k = 2; k <= 9; k++) P.push({ min: 1, lab: `x + ${k}`, f: x => x + k });
+  for (let k = 2; k <= 5; k++) P.push({ min: 1, lab: `${k}x`, f: x => k * x });
+  P.push({ min: 2, lab: "x²", f: x => x * x });
+  for (let a = 2; a <= 4; a++) for (const b of [-3, -2, -1, 1, 2, 3]) P.push({ min: 3, lab: `${a}x ${sgn(b)}`, f: x => a * x + b });
+  for (const b of [-2, -1, 1, 2, 3]) P.push({ min: 4, lab: `x² ${sgn(b)}`, f: x => x * x + b });
+  P.push({ min: 5, lab: "x² + x", f: x => x * x + x }, { min: 5, lab: "x² − x", f: x => x * x - x },
+    { min: 5, lab: "x³", f: x => x ** 3, max: 7 }, { min: 5, lab: "(x + 1)²", f: x => (x + 1) ** 2 },
+    { min: 6, lab: "2x²", f: x => 2 * x * x }, { min: 6, lab: "x(x + 1) ÷ 2", f: x => x * (x + 1) / 2 },
+    { min: 6, lab: "2ˣ", f: x => 2 ** x, max: 9 }, { min: 7, lab: "x³ − x", f: x => x ** 3 - x, max: 7 },
+    { min: 7, lab: "3x² − 1", f: x => 3 * x * x - 1 }, { min: 8, lab: "x³ + 1", f: x => x ** 3 + 1, max: 7 });
+  return P;
+}
+const ANA = anaPool();
+function genAnalogy(L) {
+  for (let tries = 0; tries < 100; tries++) {
+    const fn = weighted(ANA, L);
+    const xs = shuf(Array.from({ length: (fn.max || 12) }, (_, i) => i + 1)).slice(0, 4);
+    const ex = xs.slice(0, 3), qx = xs[3], ans = fn.f(qx);
+    const clash = ANA.some(g => g !== fn && ex.every(x => g.f(x) === fn.f(x)) && g.f(qx) !== ans);
+    if (clash) continue;
+    const pairs = ex.map(x => `<span>${x} → ${fn.f(x)}</span>`).join("") + `<span>${qx} → <span class="sxQ">?</span></span>`;
+    const o = buildOpts(ans, [ans + 1, ans - 1, ans + qx, ans - qx, ans * 2], V, 6, numFill(ans, numSpan(ans)));
+    return { prompt: "The same rule turns every left number into its right number. What goes in the gap?", fig: `<div class="sxPairs">${pairs}</div>`, ...o, explain: `The rule is x → ${fn.lab}.` };
+  }
+}
+
+/* ---- number grids ---- */
+const GOPS = [
+  { min: 1, lab: "a + b = c", f: (a, b) => a + b, g: L => [ri(1, 8 + L * 3), ri(1, 8 + L * 3)], w: (a, b) => `${a} + ${b} = ${a + b}` },
+  { min: 2, lab: "a − b = c", f: (a, b) => a - b, g: L => { const b = ri(1, 10 + L * 2); return [b + ri(1, 10 + L * 2), b]; }, w: (a, b) => `${a} − ${b} = ${a - b}` },
+  { min: 3, lab: "a × b = c", f: (a, b) => a * b, g: L => [ri(2, L < 6 ? 9 : 12), ri(2, L < 6 ? 9 : 12)], w: (a, b) => `${a} × ${b} = ${a * b}` },
+  { min: 5, lab: "(a + b) × 2 = c", f: (a, b) => (a + b) * 2, g: () => [ri(1, 15), ri(1, 15)], w: (a, b) => `(${a} + ${b}) × 2 = ${(a + b) * 2}` },
+  { min: 6, lab: "a × 2 + b = c", f: (a, b) => 2 * a + b, g: () => [ri(1, 15), ri(1, 15)], w: (a, b) => `${a} × 2 + ${b} = ${2 * a + b}` },
+  { min: 6, lab: "a² + b = c", f: (a, b) => a * a + b, g: () => [ri(2, 9), ri(1, 15)], w: (a, b) => `${a}² + ${b} = ${a * a + b}` },
+  { min: 7, lab: "(a − b)² = c", f: (a, b) => (a - b) ** 2, g: () => { const b = ri(1, 10); return [b + ri(1, 8), b]; }, w: (a, b) => `(${a} − ${b})² = ${(a - b) ** 2}` },
+  { min: 8, lab: "a × b + a + b = c", f: (a, b) => a * b + a + b, g: () => [ri(2, 9), ri(2, 9)], w: (a, b) => `${a} × ${b} + ${a} + ${b} = ${a * b + a + b}` },
+];
+function genGrid(L) {
+  for (let tries = 0; tries < 200; tries++) {
+    const op = weighted(GOPS, L);
+    const orient = L >= 4 && chance(0.5) ? "col" : "row";
+    const lines = [0, 1, 2].map(() => { const [a, b] = op.g(L); return [a, b, op.f(a, b)]; });
+    const cell = (r, c) => orient === "row" ? lines[r][c] : lines[c][r];
+    const m = L < 3 ? [2, 2] : [ri(0, 2), ri(0, 2)];
+    const G = [0, 1, 2].map(r => [0, 1, 2].map(c => cell(r, c)));
+    // every complete line, in both orientations, must fit ONLY the true rule
+    let bad = false;
+    for (const o of ["row", "col"]) {
+      const full = [0, 1, 2].filter(i => o === "row" ? m[0] !== i : m[1] !== i).map(i => o === "row" ? G[i] : [G[0][i], G[1][i], G[2][i]]);
+      for (const g of GOPS) {
+        if (g === op && o === orient) continue;
+        if (full.every(([a, b, c]) => g.f(a, b) === c)) bad = true;
+      }
+    }
+    if (bad || lines.some(l => l.some(x => x < 0))) continue;
+    const ans = G[m[0]][m[1]];
+    let t = "";
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) t += r === m[0] && c === m[1] ? `<div class="sxQ">?</div>` : `<div>${G[r][c]}</div>`;
+    const o = buildOpts(ans, [ans + 1, ans - 1, ans + 2, ans - 2, ans * 2], V, 6, numFill(ans, numSpan(ans)));
+    const full = lines.find((_, i) => i !== (orient === "row" ? m[0] : m[1]));
+    return { prompt: "Every row (or every column) follows the same rule. Find the missing number.", fig: `<div class="sxGrid">${t}</div>`, ...o,
+      explain: `${orient === "row" ? "Across each row" : "Down each column"}: ${op.lab} — e.g. ${op.w(full[0], full[1])}.` };
+  }
+}
+
+/* ---- ordering logic ---- */
+const NAMES = ["Ada", "Bram", "Cleo", "Dov", "Esme", "Finn", "Gus", "Hana", "Ivo", "Juno", "Kai", "Lev", "Mira", "Nils", "Otto", "Pia", "Rex", "Suki", "Tove", "Uri"];
+const THEMES = [
+  { more: "taller than", less: "shorter than", top: "tallest", bot: "shortest" },
+  { more: "older than", less: "younger than", top: "oldest", bot: "youngest" },
+  { more: "faster than", less: "slower than", top: "fastest", bot: "slowest" },
+  { more: "heavier than", less: "lighter than", top: "heaviest", bot: "lightest" },
+];
+function genOrder(L) {
+  const T = pick(THEMES), n = L <= 2 ? 4 : L <= 5 ? 5 : 6;
+  const nm = shuf(NAMES).slice(0, n);          // nm[0] is the "most"
+  const pairs = []; for (let i = 0; i < n - 1; i++) pairs.push(i);
+  const clues = [];
+  const used = new Set();
+  if (L >= 7) for (const i of shuf(pairs)) {
+    if (i + 1 < n - 1 && !used.has(i) && !used.has(i + 1) && chance(0.6)) {
+      used.add(i); used.add(i + 1);
+      clues.push(`${nm[i + 1]} is ${T.less} ${nm[i]} but ${T.more} ${nm[i + 2]}.`);
+    }
+  }
+  for (const i of pairs) if (!used.has(i)) clues.push(chance(0.5) ? `${nm[i]} is ${T.more} ${nm[i + 1]}.` : `${nm[i + 1]} is ${T.less} ${nm[i]}.`);
+  if (L >= 5) for (let r = 0; r < (L >= 8 ? 2 : 1); r++) { const i = ri(0, n - 3), j = ri(i + 2, n - 1); clues.push(chance(0.5) ? `${nm[i]} is ${T.more} ${nm[j]}.` : `${nm[j]} is ${T.less} ${nm[i]}.`); }
+  const k = L <= 2 ? pick([0, n - 1]) : ri(0, n - 1);
+  const q = k === 0 ? `Who is the ${T.top}?` : k === n - 1 ? `Who is the ${T.bot}?` : k < n / 2 ? `Who is the ${ORD(k + 1)} ${T.top}?` : `Who is the ${ORD(n - k)} ${T.bot}?`;
+  const o = buildOpts(nm[k], nm, V, n);
+  return { prompt: q, fig: `<div class="sxClues">${shuf(clues).map(c => `<div>• ${c}</div>`).join("")}</div>`, ...o,
+    explain: `From ${T.top} to ${T.bot}: ${nm.join(" › ")}.` };
+}
+
+/* ---- syllogisms & conditionals ---- */
+const WORDS = ["bloops", "razzies", "zorbs", "quiffs", "wendles", "plonks", "snargs", "tovs", "grebbles", "mimsies", "florps", "vexes", "drubs", "fennels", "zilps", "morks"];
+const SYL = [
+  { min: 1, p: ["All A are B.", "All B are C."], c: "All A are C.", v: 1, why: "A sits inside B, and B sits inside C." },
+  { min: 1, p: ["All A are B."], c: "All B are A.", v: 0, why: "B could include things that are not A." },
+  { min: 1, p: ["No A are B."], c: "No B are A.", v: 1, why: "“No” statements run both ways." },
+  { min: 2, p: ["Some A are B."], c: "Some B are A.", v: 1, why: "The overlap between A and B is shared by both." },
+  { min: 2, p: ["All A are B.", "All B are C."], c: "All C are A.", v: 0, why: "C can be much bigger than A." },
+  { min: 3, p: ["All A are B.", "Some C are A."], c: "Some C are B.", v: 1, why: "Those C that are A are also B." },
+  { min: 3, p: ["All A are B.", "Some B are C."], c: "Some A are C.", v: 0, why: "The B that are C might all be outside A." },
+  { min: 3, p: ["Some A are not B."], c: "Some B are not A.", v: 0, why: "B could lie entirely inside A." },
+  { min: 4, p: ["All A are B.", "No C are B."], c: "No A are C.", v: 1, why: "Every A is B, and nothing that is B is C." },
+  { min: 4, p: ["All A are B.", "No C are A."], c: "No C are B.", v: 0, why: "C could overlap the part of B outside A." },
+  { min: 5, p: ["No A are B.", "Some C are B."], c: "Some C are not A.", v: 1, why: "The C that are B can't be A." },
+  { min: 5, p: ["Some A are B.", "Some B are C."], c: "Some A are C.", v: 0, why: "The two overlaps might be different parts of B." },
+  { min: 5, p: ["Some A are not B.", "All C are B."], c: "Some A are not C.", v: 1, why: "The A outside B are outside C too, since C lies inside B." },
+  { min: 6, p: ["All A are B.", "All C are B."], c: "All A are C.", v: 0, why: "A and C can be separate parts of B." },
+  { min: 6, p: ["No A are B.", "No B are C."], c: "No A are C.", v: 0, why: "A and C might still overlap outside B." },
+  { min: 7, p: ["All A are B.", "All B are C.", "No C are D."], c: "No A are D.", v: 1, why: "A ⊂ B ⊂ C, and C shares nothing with D." },
+  { min: 7, p: ["All A are B.", "Some B are C.", "All C are D."], c: "Some A are D.", v: 0, why: "The B that are C (and so D) might all be outside A." },
+  { min: 8, p: ["No A are B.", "All C are A.", "All D are C."], c: "No D are B.", v: 1, why: "D ⊂ C ⊂ A, and A shares nothing with B." },
+  { min: 8, p: ["All A are B.", "No B are C.", "Some D are C."], c: "Some D are not A.", v: 1, why: "The D that are C aren't B, so they can't be A." },
+  { min: 8, p: ["Some A are B.", "No B are C.", "All D are C."], c: "Some A are not D.", v: 1, why: "The A that are B aren't C, so they aren't D." },
+];
+const CLAUSES = [
+  [["the gong sounds", "the gong does not sound"], ["the monks dance", "the monks do not dance"]],
+  [["the lamp is lit", "the lamp is not lit"], ["the door is open", "the door is not open"]],
+  [["it rains in the valley", "it does not rain in the valley"], ["the river rises", "the river does not rise"]],
+  [["the scroll is sealed", "the scroll is not sealed"], ["the oracle is silent", "the oracle is not silent"]],
+  [["the ant turns left", "the ant does not turn left"], ["the cell is black", "the cell is not black"]],
+  [["the tide is high", "the tide is not high"], ["the pier is closed", "the pier is not closed"]],
+];
+const PROP = [
+  { min: 1, p: ["If P, then Q.", "P."], c: "Q.", v: 1, why: "Affirming the condition guarantees the result (modus ponens)." },
+  { min: 2, p: ["If P, then Q.", "nQ."], c: "nP.", v: 1, why: "If P had happened, Q would have too (modus tollens)." },
+  { min: 2, p: ["If P, then Q.", "Q."], c: "P.", v: 0, why: "Q could happen for some other reason (affirming the consequent)." },
+  { min: 3, p: ["If P, then Q.", "nP."], c: "nQ.", v: 0, why: "Q might happen anyway (denying the antecedent)." },
+  { min: 6, p: ["P only if Q.", "P."], c: "Q.", v: 1, why: "“P only if Q” means P can't happen without Q." },
+  { min: 6, p: ["P only if Q.", "Q."], c: "P.", v: 0, why: "Q is required for P, but doesn't force it." },
+  { min: 7, p: ["P only if Q.", "nQ."], c: "nP.", v: 1, why: "Without Q, P is impossible." },
+];
+const cap = s => s[0].toUpperCase() + s.slice(1);
+function genSyl(L) {
+  const prop = chance(0.35);
+  const form = weighted(prop ? PROP : SYL, L);
+  let fill;
+  if (prop) { const [P, Q] = pick(CLAUSES);
+    fill = s => cap(s.replace(/nP/g, P[1]).replace(/nQ/g, Q[1]).replace(/\bP\b/g, P[0]).replace(/\bQ\b/g, Q[0])); }
+  else { const w = shuf(WORDS).slice(0, 4), m = { A: w[0], B: w[1], C: w[2], D: w[3] }; fill = s => s.replace(/\b[ABCD]\b/g, x => m[x]); }
+  const prem = (L >= 3 ? shuf(form.p) : form.p).map(fill);
+  const fig = `<div class="sxPrem">${prem.map(p => `<div>${p}</div>`).join("")}<div class="sxConc">∴ ${fill(form.c)}</div></div>`;
+  const opts = ["Follows", "Doesn’t follow"];
+  return { prompt: "Assume the statements are true. Does the conclusion necessarily follow?", fig, options: opts.map(V), answer: form.v ? 0 : 1, cols: 2,
+    explain: (form.v ? "It follows: " : "It doesn’t follow: ") + fill(form.why) };
+}
+
+/* ================================ THE ENGINE ================================ */
+const CATS = [
+  { id: "seq", name: "Number series", gen: genSeq, w: 1.3 },
+  { id: "mat", name: "Matrices", gen: genMatrix, w: 1.4 },
+  { id: "fig", name: "Figure series", gen: genSeries, w: 1.1 },
+  { id: "odd", name: "Odd one out", gen: genOdd, w: 1 },
+  { id: "let", name: "Letter series", gen: genLetters, w: 0.9 },
+  { id: "sym", name: "Symbol algebra", gen: genSymbols, w: 1 },
+  { id: "ana", name: "Analogies", gen: genAnalogy, w: 0.9 },
+  { id: "grd", name: "Number grids", gen: genGrid, w: 0.9 },
+  { id: "ord", name: "Ordering", gen: genOrder, w: 0.9 },
+  { id: "syl", name: "Syllogisms", gen: genSyl, w: 0.9 },
+];
+const CAT = Object.fromEntries(CATS.map(c => [c.id, c]));
+const TRIAL_N = 25, TRIAL_SECS = 20 * 60;
+
+const ST = { mode: "endless", lock: 0, lvl: 2, streak: 0, count: 0, cats: new Set(CATS.map(c => c.id)), cur: null, answered: false, last: null, trial: null, review: null };
+let stats = { n: 0, ok: 0, best: 0, trialBest: null, cat: {} };
+try { const s = JSON.parse(localStorage.getItem("mt_sphinx_v1")); if (s && typeof s.n === "number") stats = Object.assign(stats, s); } catch (e) {}
+function save() { try { localStorage.setItem("mt_sphinx_v1", JSON.stringify(stats)); } catch (e) {} }
+
+function makePuzzle(catId, L) {
+  for (let tries = 0; tries < 8; tries++) {
+    try { const p = CAT[catId].gen(L); if (p && p.options && p.options.length) { p.cat = catId; p.L = L; return p; } } catch (e) { console.warn("sphinx", catId, e); }
+  }
+  return makePuzzle("seq", L);
+}
+function nextCat() {
+  const on = CATS.filter(c => ST.cats.has(c.id) && (ST.cats.size === 1 || c.id !== ST.last));
+  let x = Math.random() * on.reduce((a, c) => a + c.w, 0);
+  for (const c of on) if ((x -= c.w) < 0) return c.id;
+  return on[0].id;
+}
+function endlessLevel() {
+  if (ST.lock) return clamp(ST.lock + (chance(0.3) ? pick([-1, 1]) : 0), 1, 10);
+  return clamp(Math.round(ST.lvl + (chance(0.3) ? pick([-1, 1]) : 0)), 1, 10);
+}
+
+/* ------------------------------ rendering ------------------------------ */
+function renderCats() {
+  const el = $("sxCats"); el.innerHTML = `<span class="lab">puzzles</span>`;
+  for (const c of CATS) {
+    const b = document.createElement("button");
+    b.className = "sxCat" + (ST.cats.has(c.id) ? "" : " off");
+    b.textContent = c.name; b.title = "click to toggle · double-click to play only this";
+    b.onclick = () => { if (ST.cats.has(c.id)) { if (ST.cats.size > 1) ST.cats.delete(c.id); } else ST.cats.add(c.id); renderCats(); };
+    b.ondblclick = () => { ST.cats = new Set([c.id]); renderCats(); if (!ST.trial) newPuzzle(); };
+    el.append(b);
+  }
+  const all = document.createElement("button"); all.className = "sxCat"; all.textContent = "all";
+  all.onclick = () => { ST.cats = new Set(CATS.map(c => c.id)); renderCats(); }; el.append(all);
+}
+function renderHud() {
+  if (ST.trial) {
+    const t = ST.trial, left = Math.max(0, TRIAL_SECS - Math.floor((Date.now() - t.t0) / 1000));
+    $("sxHudL").textContent = t.done ? "TRIAL · finished" : `TRIAL · question ${Math.min(t.i + 1, TRIAL_N)} of ${TRIAL_N}`;
+    $("sxHudR").textContent = t.done ? "" : `time ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
+  } else {
+    $("sxHudL").textContent = `ENDLESS · your level ${ST.lock || Math.round(ST.lvl)}${ST.lock ? " (fixed)" : ""} · streak ${ST.streak}`;
+    $("sxHudR").textContent = `#${ST.count}`;
+  }
+}
+function renderStats() {
+  const pct = stats.n ? Math.round(100 * stats.ok / stats.n) : 0;
+  const per = CATS.filter(c => stats.cat[c.id]).map(c => `${c.name.toLowerCase()} ${stats.cat[c.id][0]}/${stats.cat[c.id][1]}`).join(" · ");
+  $("sxStats").innerHTML = `solved ${stats.ok} of ${stats.n} (${pct}%) · best streak ${stats.best}` +
+    (stats.trialBest != null ? ` · best trial ${stats.trialBest}/${TRIAL_N}` : "") +
+    (per ? `<div class="sxPer">${per}</div>` : "");
+}
+function showPuzzle(p, marked) {
+  ST.cur = p;
+  $("sxTag").textContent = CAT[p.cat].name.toUpperCase();
+  $("sxLvl").textContent = `· level ${p.L}`;
+  $("sxPrompt").textContent = p.prompt;
+  $("sxFig").innerHTML = p.fig || "";
+  $("sxFig").style.display = p.fig ? "" : "none";
+  const opts = $("sxOpts");
+  opts.style.display = "";
+  opts.className = p.cols === 2 ? "two" : "";
+  opts.innerHTML = "";
+  p.options.forEach((html, i) => {
+    const b = document.createElement("button");
+    b.className = "sxOpt"; b.innerHTML = `<span class="k">${KEYS[i]}</span>${html}`;
+    b.onclick = () => choose(i);
+    opts.append(b);
+  });
+  $("sxFeed").textContent = ""; $("sxExplain").innerHTML = "";
+  ST.answered = false;
+  if (marked != null) { markAnswer(marked, true); }
+  else $("sxNext").textContent = ST.trial ? "Skip" : "Skip";
+  renderHud();
+}
+function markAnswer(i, review) {
+  const p = ST.cur, btns = $("sxOpts").children;
+  for (const b of btns) b.disabled = true;
+  btns[p.answer].classList.add("right");
+  if (i >= 0 && i !== p.answer) btns[i].classList.add("wrong");
+  const ok = i === p.answer;
+  $("sxFeed").innerHTML = i < 0 ? `<span style="color:var(--dgy)">Skipped — the answer was ${KEYS[p.answer]}.</span>`
+    : ok ? `<span style="color:var(--grn)">✓ Correct.</span>` : `<span style="color:var(--red)">✗ Not quite — the answer is ${KEYS[p.answer]}.</span>`;
+  $("sxExplain").innerHTML = p.explain;
+  ST.answered = true;
+  $("sxNext").textContent = review ? "Back to results" : "Next ▶";
+}
+function newPuzzle() {
+  ST.review = null;
+  const c = nextCat(); ST.last = c; ST.count++;
+  showPuzzle(makePuzzle(c, endlessLevel()));
+}
+function choose(i) {
+  if (ST.answered || ST.review) return;
+  const p = ST.cur;
+  if (ST.trial) {
+    const t = ST.trial;
+    t.log.push({ p, pick: i });
+    ST.answered = true;
+    const btns = $("sxOpts").children; for (const b of btns) b.disabled = true;
+    if (i >= 0) btns[i].classList.add("picked");
+    setTimeout(() => { t.i++; trialStep(); }, 220);
+    return;
+  }
+  const ok = i === p.answer;
+  if (i >= 0) {
+    stats.n++; stats.cat[p.cat] = stats.cat[p.cat] || [0, 0]; stats.cat[p.cat][1]++;
+    if (ok) { stats.ok++; stats.cat[p.cat][0]++; ST.streak++; stats.best = Math.max(stats.best, ST.streak); ST.lvl = Math.min(10, ST.lvl + 0.45); }
+    else { ST.streak = 0; ST.lvl = Math.max(1, ST.lvl - 0.8); }
+    save();
+  } else { ST.streak = 0; }
+  markAnswer(i);
+  renderStats(); renderHud();
+}
+
+/* ------------------------------ trial mode ------------------------------ */
+let timer = null;
+function startTrial() {
+  const on = shuf(CATS.filter(c => ST.cats.has(c.id)).map(c => c.id));
+  const plan = []; while (plan.length < TRIAL_N) plan.push(...shuf(on));
+  ST.trial = { i: 0, t0: Date.now(), log: [], plan: plan.slice(0, TRIAL_N), done: false };
+  clearInterval(timer); timer = setInterval(() => { renderHud(); if (ST.trial && !ST.trial.done && Date.now() - ST.trial.t0 >= TRIAL_SECS * 1000) finishTrial(); }, 500);
+  trialStep();
+}
+function trialStep() {
+  const t = ST.trial;
+  if (t.i >= TRIAL_N) return finishTrial();
+  const L = clamp(2 + Math.round(t.i * 7 / (TRIAL_N - 1)), 1, 10);
+  showPuzzle(makePuzzle(t.plan[t.i], L));
+}
+function finishTrial() {
+  const t = ST.trial; if (t.done) return;
+  t.done = true; clearInterval(timer);
+  t.secs = Math.min(TRIAL_SECS, Math.round((Date.now() - t.t0) / 1000));
+  showResults();
+}
+function showResults() {
+  const t = ST.trial; ST.review = null;
+  const score = t.log.filter(e => e.pick === e.p.answer).length;
+  if (!t.recorded) { t.recorded = true; stats.trialBest = Math.max(stats.trialBest || 0, score); save(); renderStats(); }
+  const verdict = score >= 22 ? "The Sphinx bows to you." : score >= 18 ? "A formidable mind." : score >= 13 ? "Solid reasoning." : score >= 8 ? "The riddles bit back. Try again." : "The Sphinx is hungry. Rest, then return.";
+  $("sxTag").textContent = "TRIAL RESULTS"; $("sxLvl").textContent = "";
+  $("sxPrompt").innerHTML = `<b style="font-size:22px;color:var(--blu)">${score} / ${TRIAL_N}</b> &nbsp; in ${Math.floor(t.secs / 60)}:${String(t.secs % 60).padStart(2, "0")} — ${verdict}<div style="color:var(--dgy);font-size:13px;margin-top:4px">For fun only — this is not a real IQ score. Click any question to review it.</div>`;
+  let list = "";
+  for (let i = 0; i < TRIAL_N; i++) {
+    const e = t.log[i];
+    const mark = !e ? `<span style="color:var(--dgy)">—</span>` : e.pick === e.p.answer ? `<span style="color:var(--grn)">✓</span>` : `<span style="color:var(--red)">✗</span>`;
+    list += `<div class="sxRes${e ? "" : " na"}" data-i="${i}">${String(i + 1).padStart(2, " ")}. ${mark} ${e ? CAT[e.p.cat].name + " · L" + e.p.L : "not reached"}</div>`;
+  }
+  $("sxFig").style.display = ""; $("sxFig").innerHTML = `<div class="sxResList">${list}</div>`;
+  $("sxFig").querySelectorAll(".sxRes:not(.na)").forEach(el => el.onclick = () => {
+    const e = t.log[+el.dataset.i]; ST.review = true; showPuzzle(e.p, e.pick);
+    ST.review = true; $("sxTag").textContent = `REVIEW #${+el.dataset.i + 1} · ` + CAT[e.p.cat].name.toUpperCase();
+  });
+  $("sxOpts").style.display = "none"; $("sxFeed").textContent = ""; $("sxExplain").innerHTML = "";
+  $("sxNext").textContent = "New trial";
+  renderHud();
+}
+function next() {
+  if (ST.trial) {
+    if (ST.trial.done) { if (ST.review) return showResults(); return startTrial(); }
+    if (!ST.answered) choose(-1);
+    return;
+  }
+  if (!ST.answered) { choose(-1); return; }
+  newPuzzle();
+}
+function setMode(m) {
+  ST.mode = m; clearInterval(timer);
+  document.querySelectorAll(".sxMode").forEach(b => b.classList.toggle("cur", b.dataset.m === m));
+  if (m === "trial") startTrial(); else { ST.trial = null; newPuzzle(); }
+}
+
+/* ------------------------------ wiring ------------------------------ */
+let inited = false;
+function ensure() {
+  if (inited) return; inited = true;
+  renderCats(); renderStats();
+  document.querySelectorAll(".sxMode").forEach(b => b.onclick = () => setMode(b.dataset.m));
+  document.querySelectorAll(".sxDiff").forEach(b => b.onclick = () => {
+    ST.lock = +b.dataset.d;
+    document.querySelectorAll(".sxDiff").forEach(x => x.classList.toggle("cur", x === b));
+    if (!ST.lock) ST.lvl = Math.max(1, ST.lvl);
+    if (!ST.trial) newPuzzle(); else renderHud();
+  });
+  $("sxNext").onclick = next;
+  $("sxReset").onclick = () => { if (confirm("Reset all Sphinx statistics?")) { stats = { n: 0, ok: 0, best: 0, trialBest: null, cat: {} }; save(); renderStats(); } };
+  document.addEventListener("keydown", e => {
+    if (window.MT_VIEW !== "sphinx" || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    const k = e.key.toLowerCase();
+    let i = "123456".indexOf(k); if (i < 0 && k.length === 1) i = "abcdef".indexOf(k);
+    if (i >= 0 && ST.cur && i < ST.cur.options.length && $("sxOpts").style.display !== "none") { choose(i); e.preventDefault(); }
+    else if (k === "enter" || k === " " || k === "n") { next(); e.preventDefault(); }
+  });
+  newPuzzle();
+}
+window.sxEnsure = ensure;
+if (window.MT_VIEW === "sphinx") ensure();
 })();
 </script>
 </body>
