@@ -2734,10 +2734,10 @@ const SHAPES = ["circle", "triangle", "square", "diamond", "pentagon", "hexagon"
 const SHAPE_PL = { circle: "circles", triangle: "triangles", square: "squares", diamond: "diamonds", pentagon: "pentagons", hexagon: "hexagons", star: "stars", cross: "crosses" };
 const FILLS = ["none", "hatch", "solid"];
 const FILLNAME = { none: "empty", hatch: "striped", solid: "black" };
-const SIZES = [0.55, 0.78, 1];
-const SIZENAME = { 0.55: "small", 0.78: "medium", 1: "large" };
+const SIZES = [0.5, 0.75, 1];
+const SIZENAME = { 0.5: "small", 0.75: "medium", 1: "large" };
 const LAYOUT = { 1: [[50, 50]], 2: [[29, 50], [71, 50]], 3: [[50, 29], [29, 71], [71, 71]], 4: [[30, 30], [70, 30], [30, 70], [70, 70]], 5: [[27, 27], [73, 27], [50, 50], [27, 73], [73, 73]] };
-const BASER = { 1: 34, 2: 18, 3: 17, 4: 16, 5: 13 };
+const BASER = { 1: 34, 2: 18.5, 3: 18.5, 4: 16, 5: 13 };
 
 function rotPts(pts, cx, cy, rot) {
   const a = rot * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
@@ -2762,10 +2762,10 @@ function shapeEl(shape, cx, cy, r, rot, fill) {
 function hatchDef(id) {
   return `<defs><pattern id="${id}" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="#fff"/><line x1="0" y1="0" x2="0" y2="5" stroke="#000" stroke-width="2.2"/></pattern></defs>`;
 }
-function figSVG(s, px) {
+function figSVG(s, px, R) {
   const id = "sxh" + (++uid);
   const fill = s.fill === "solid" ? "#000" : s.fill === "hatch" ? `url(#${id})` : "#fff";
-  const r = BASER[s.count] * s.size;
+  const r = (R || BASER[s.count]) * s.size;
   let body = "";
   for (const [x, y] of LAYOUT[s.count]) body += shapeEl(s.shape, x, y, r, 0, fill);
   return `<svg width="${px}" height="${px}" viewBox="0 0 100 100">${hatchDef(id)}${body}</svg>`;
@@ -2851,7 +2851,7 @@ function genLetters(L) {
 function genMatrix(L) {
   const nVar = L <= 2 ? 1 : L <= 4 ? 2 : L <= 7 ? 3 : 4;
   const attrs = shuf(["shape", "count", "fill", "size"]).slice(0, nVar);
-  const base = spec(pick(SHAPES), ri(1, 3), pick(FILLS), pick([0.78, 1]));
+  const base = spec(pick(SHAPES), ri(1, 3), pick(FILLS), pick([0.75, 1]));
   const g = [0, 1, 2].map(() => [0, 1, 2].map(() => ({ ...base })));
   const ex = [];
   const domain = {};
@@ -2860,7 +2860,7 @@ function genMatrix(L) {
     if (a === "shape") { vals = shuf(SHAPES).slice(0, 3); rule = pick(["row", "col", "latin"]); }
     if (a === "fill") { vals = shuf(FILLS); rule = pick(["row", "col", "latin"]); }
     if (a === "size") { vals = chance(0.5) ? SIZES.slice() : SIZES.slice().reverse(); rule = pick(["prog", "latin", "row"]); }
-    if (a === "count") { vals = shuf([1, 2, 3]); rule = pick(L >= 5 ? ["prog", "latin", "row", "prog"] : ["prog", "latin", "row"]); }
+    if (a === "count") { vals = shuf([1, 2, 3]); rule = attrs.includes("size") ? pick(["latin", "row", "col"]) : pick(L >= 5 ? ["prog", "latin", "row", "prog"] : ["prog", "latin", "row"]); }
     domain[a] = vals;
     const sh = pick([1, 2]), offs = shuf([0, 1, 2]);
     for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
@@ -2873,23 +2873,26 @@ function genMatrix(L) {
       g[r][c][a] = v;
     }
     const nm = { shape: "shape", fill: "shading", size: "size", count: "number of shapes" }[a];
-    const list = a === "shape" ? vals.map(s => SHAPE_PL[s]).join(", ") : a === "fill" ? vals.map(f => FILLNAME[f]).join(", ") : "";
+    const list = a === "shape" ? vals.map(s => SHAPE_PL[s]).join(", ") : a === "fill" ? vals.map(f => FILLNAME[f]).join(", ") : a === "size" ? "small, medium, large" : "";
     if (rule === "row") ex.push(`Each row keeps a single ${nm}${list ? " (" + list + ")" : ""}.`);
     else if (rule === "col") ex.push(`Each column keeps a single ${nm}${list ? " (" + list + ")" : ""}.`);
     else if (rule === "latin") ex.push(`Every row and column contains each ${nm} exactly once${list ? " (" + list + ")" : ""}.`);
     else if (a === "count") ex.push(`Within each row, the number of shapes goes up by one from left to right.`);
-    else ex.push(`Size goes ${vals[0] < vals[2] ? "up" : "down"} from left to right.`);
+    else ex.push(`Size goes ${vals[0] < vals[2] ? "up" : "down"} from left to right (small, medium, large).`);
   }
   if (nVar < 4) ex.push("Everything else stays the same.");
   const ans = g[2][2];
   const cands = [];
-  const alt = { shape: domain.shape || shuf(SHAPES).slice(0, 3), fill: FILLS, size: SIZES, count: [ans.count - 1, ans.count + 1, ans.count + 2].filter(n => n >= 1 && n <= 5) };
+  const alt = { shape: domain.shape || shuf(SHAPES).slice(0, 3), fill: FILLS, size: SIZES, count: [ans.count - 1, ans.count + 1, ans.count + 2].filter(n => n >= 1 && n <= (attrs.includes("size") ? 3 : 5)) };
   for (const a of shuf(["shape", "fill", "size", "count"])) for (const v of alt[a]) if (v !== ans[a]) cands.push({ ...ans, [a]: v });
   cands.unshift({ ...g[2][1] }, { ...g[1][2] });
-  const o = buildOpts(ans, cands.slice(0, 2).concat(shuf(cands.slice(2))), s => figSVG(s, 66), 6);
+  const o = buildOpts(ans, cands.slice(0, 2).concat(shuf(cands.slice(2))), x => x, 6);
+  const maxC = Math.max(...g.flat().map(x => x.count), ...o.options.map(x => x.count));
+  const R = BASER[maxC];
+  o.options = o.options.map(x => figSVG(x, 66, R));
   let cells = "";
   for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++)
-    cells += (r === 2 && c === 2) ? `<div class="miss">?</div>` : `<div>${figSVG(g[r][c], 76)}</div>`;
+    cells += (r === 2 && c === 2) ? `<div class="miss">?</div>` : `<div>${figSVG(g[r][c], 76, R)}</div>`;
   return { prompt: "Which figure completes the pattern?", fig: `<div class="sxMatrix">${cells}</div>`, ...o, explain: ex.join(" ") };
 }
 
@@ -2903,7 +2906,7 @@ function genOddFig(L) {
   for (let tries = 0; tries < 300; tries++) {
     const tA = target === "parity" ? "shape" : target;
     const noise = shuf(["shape", "fill", "count", "size"].filter(a => a !== tA)).slice(0, noiseN);
-    const base = spec(pick(SHAPES), ri(1, 4), pick(FILLS), pick([0.78, 1]));
+    const base = spec(pick(SHAPES), ri(1, 4), pick(FILLS), pick([0.75, 1]));
     if (target === "size") base.count = ri(1, 2);
     const it = [0, 1, 2, 3, 4].map(() => ({ ...base }));
     for (const a of noise) it.forEach(x => x[a] = pick(dom[a]));
@@ -2930,7 +2933,7 @@ function genOddFig(L) {
       if (vs.includes(4) && vs.includes(1)) bad = true;
     }
     if (bad) continue;
-    return { prompt: "Which figure is the odd one out?", fig: "", options: it.map(s => figSVG(s, 66)), answer: odd, explain: ex };
+    return { prompt: "Which figure is the odd one out?", fig: "", options: it.map(s => figSVG(s, 66, BASER[Math.max(...it.map(x => x.count))])), answer: odd, explain: ex };
   }
   return genOddNum(L);
 }
