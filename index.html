@@ -2767,7 +2767,7 @@ function figSVG(s, px, R) {
   const fill = s.fill === "solid" ? "#000" : s.fill === "hatch" ? `url(#${id})` : "#fff";
   const r = (R || BASER[s.count]) * s.size;
   let body = "";
-  for (const [x, y] of LAYOUT[s.count]) body += shapeEl(s.shape, x, y, r, 0, fill);
+  for (const [x, y] of LAYOUT[s.count]) body += shapeEl(s.shape, x, y, r, s.rot || 0, fill);
   return `<svg width="${px}" height="${px}" viewBox="0 0 100 100">${hatchDef(id)}${body}</svg>`;
 }
 const spec = (shape, count, fill, size) => ({ shape, count, fill, size });
@@ -2804,13 +2804,35 @@ const SEQ = [
       return { t: seqArr(N, (i, t) => i ? t[i - 1] * (m0 + i - 1) : a), ex: `Multiply by ${m0}, then ${m0 + 1}, then ${m0 + 2}, …` }; } },
   { min: 8, make(L, N) { const a = ri(0, 2), b = ri(1, 3), c = ri(1, 4);
       return { t: seqArr(N, (i, t) => i < 3 ? [a, b, c][i] : t[i - 1] + t[i - 2] + t[i - 3]), ex: `Each term is the sum of the three before it.` }; } },
+  { min: 9, make(L, N) { const k = ri(1, 4), a = ri(1, 20);
+      return { t: seqArr(N, (i, t) => i ? t[i - 1] + (i + k - 1) ** 2 : a), ex: `The gaps are consecutive squares: +${k}\u00b2, +${k + 1}\u00b2, +${k + 2}\u00b2, \u2026` }; } },
+  { min: 9, make(L, N) { const d = ri(1, 4), a = ri(1, 20);
+      return { t: seqArr(N, (i, t) => i ? t[i - 1] + d * 2 ** (i - 1) : a), ex: `The gaps double each time: +${d}, +${2 * d}, +${4 * d}, \u2026` }; } },
+  { min: 9, make(L, N) { const m = pick([2, 3]), c = ri(1, 5), a = ri(c + 2, 9);
+      return { t: seqArr(N, (i, t) => i ? (i % 2 ? t[i - 1] * m : t[i - 1] - c) : a), ex: `Alternate \u00d7${m} and \u2212${c}.` }; } },
+  { min: 10, make(L, N) { const a = ri(1, 3), b = ri(2, 5);
+      return { t: seqArr(N, (i, t) => i === 0 ? a : i === 1 ? b : t[i - 1] + 2 * t[i - 2]), ex: `Each term is the previous term plus twice the one before it.` }; } },
+  { min: 10, make(L, N) { const k = ri(1, 4);
+      return { t: seqArr(N, i => (i + k) ** 3 - (i + k) ** 2), ex: `n\u00b3 \u2212 n\u00b2: ${k}\u00b3 \u2212 ${k}\u00b2, ${k + 1}\u00b3 \u2212 ${k + 1}\u00b2, \u2026` }; } },
+  { min: 10, make(L, N) { const a = ri(3, 7);
+      return { t: seqArr(N, (i, t) => i ? t[i - 1] * 2 - i : a), ex: `Double, then subtract 1; double, subtract 2; double, subtract 3; \u2026` }; } },
 ];
+let HARD = false;                         // set when a level-9/10 rule is used
 function weighted(list, L) {
+  // at levels 9-10, at least 45% of picks come straight from the level-9/10 rules
+  if (L >= 9 && chance(0.45)) { const hard = list.filter(r => r.min >= 9 && r.min <= L); if (hard.length) list = hard; }
   const ok = list.filter(r => r.min <= L);
-  const w = ok.map(r => 1 + (r.min >= L - 2 ? 2 : 0));
+  // strong push toward your level: each level below yours is worth PUSH times less,
+  // and that weight is shared across the tier so big pools of easy rules can't dominate
+  const PUSH = 0.55, tier = {};
+  for (const r of ok) tier[r.min] = (tier[r.min] || 0) + 1;
+  const top = Math.max(...ok.map(r => r.min));            // hardest tier actually available
+  const w = ok.map(r => Math.pow(PUSH, top - r.min) / tier[r.min]);
   let x = Math.random() * w.reduce((a, b) => a + b, 0);
-  for (let i = 0; i < ok.length; i++) if ((x -= w[i]) < 0) return ok[i];
-  return ok[ok.length - 1];
+  let out = ok[ok.length - 1];
+  for (let i = 0; i < ok.length; i++) if ((x -= w[i]) < 0) { out = ok[i]; break; }
+  if (out.min >= 9) HARD = true;
+  return out;
 }
 function genSeq(L) {
   const rule = weighted(SEQ, L);
@@ -2827,11 +2849,23 @@ function genSeq(L) {
 
 /* ---- letter series ---- */
 function genLetters(L) {
+  const goHard = L >= 9 && chance(0.55);
   for (let tries = 0; tries < 100; tries++) {
     const kinds = ["step"]; if (L >= 2) kinds.push("back"); if (L >= 3) kinds.push("grow"); if (L >= 4) kinds.push("alt"); if (L >= 5) kinds.push("inter", "inter");
-    const kind = pick(kinds);
+    const hardK = ["odd", "prime", "dbl"]; if (L >= 10) hardK.push("fib", "fib");
+    const kind = goHard ? pick(hardK) : pick(kinds);
     let t, ex, N = 6;
-    if (kind === "step") { const s = ri(1, L < 3 ? 3 : 5), a = ri(0, 25 - s * 5); t = seqArr(N, i => a + i * s); ex = `Move forward ${s} letter${s > 1 ? "s" : ""} each step.`; }
+    const fwd = chance(0.5);
+    if (kind === "odd") { N = 5; const a = fwd ? ri(0, 9) : ri(16, 25); t = seqArr(N, i => fwd ? a + i * i : a - i * i);
+      ex = `The skips are the odd numbers: ${fwd ? "forward" : "back"} 1, 3, 5, 7.`; }
+    else if (kind === "prime") { const P = [1, 2, 4, 6, 10, 12, 16, 18, 22], s0 = ri(0, 3); t = seqArr(N, i => P[s0 + i]);
+      ex = `Letter positions are the prime numbers: ${t.map(x => x + 1).join(", ")}.`; }
+    else if (kind === "dbl") { N = 5; const a = fwd ? ri(0, 10) : ri(15, 25); t = seqArr(N, (i, x) => i ? x[i - 1] + (fwd ? 1 : -1) * 2 ** (i - 1) : a);
+      ex = `The skips double: ${fwd ? "forward" : "back"} 1, 2, 4, 8.`; }
+    else if (kind === "fib") { const sk = chance(0.5) ? [1, 1, 2, 3, 5] : [1, 2, 3, 5, 8], tot = sk.reduce((p, q) => p + q, 0); const a = ri(0, 25 - tot);
+      t = seqArr(N, (i, x) => i ? x[i - 1] + sk[i - 1] : a); ex = `The skips are ${sk.join(", ")}: each skip is the sum of the two before it.`; }
+    if (["odd", "prime", "dbl", "fib"].includes(kind)) HARD = true;
+    else if (kind === "step") { const s = ri(1, L < 3 ? 3 : 5), a = ri(0, 25 - s * 5); t = seqArr(N, i => a + i * s); ex = `Move forward ${s} letter${s > 1 ? "s" : ""} each step.`; }
     else if (kind === "back") { const s = ri(1, 4), a = ri(s * 5, 25); t = seqArr(N, i => a - i * s); ex = `Move back ${s} letter${s > 1 ? "s" : ""} each step.`; }
     else if (kind === "grow") { const d0 = ri(1, 2), a = ri(0, 25 - (5 * d0 + 10)); t = seqArr(N, (i, x) => i ? x[i - 1] + d0 + i - 1 : a); ex = `The skips grow by one: +${d0}, +${d0 + 1}, +${d0 + 2}, …`; }
     else if (kind === "alt") { const p = ri(1, 4), q = L >= 6 && chance(0.5) ? -ri(1, p) : ri(1, 4); if (p === q) continue; const a = ri(0, 25); t = seqArr(N, (i, x) => i ? x[i - 1] + (i % 2 ? p : q) : a);
@@ -2851,13 +2885,18 @@ function genLetters(L) {
 function genMatrix(L) {
   const nVar = L <= 2 ? 1 : L <= 4 ? 2 : L <= 7 ? 3 : 4;
   const attrs = shuf(["shape", "count", "fill", "size"]).slice(0, nVar);
-  const base = spec(pick(SHAPES), ri(1, 3), pick(FILLS), pick([0.75, 1]));
+  const useRot = L >= 9 && chance(0.55);   // 9+: a 5th attribute, which way the shapes point
+  if (useRot) { attrs.push("rot"); HARD = true; }
+  const POINTY = ["triangle", "pentagon", "star"];
+  const base = spec(pick(useRot ? POINTY : SHAPES), ri(1, 3), pick(FILLS), pick([0.75, 1]));
+  base.rot = 0;
   const g = [0, 1, 2].map(() => [0, 1, 2].map(() => ({ ...base })));
   const ex = [];
   const domain = {};
   for (const a of attrs) {
     let rule, vals;
-    if (a === "shape") { vals = shuf(SHAPES).slice(0, 3); rule = pick(["row", "col", "latin"]); }
+    if (a === "shape") { vals = shuf(useRot ? POINTY : SHAPES).slice(0, 3); rule = pick(["row", "col", "latin"]); }
+    if (a === "rot") { vals = shuf([0, 90, 180]); rule = pick(["row", "col", "latin", "latin"]); }
     if (a === "fill") { vals = shuf(FILLS); rule = pick(["row", "col", "latin"]); }
     if (a === "size") { vals = chance(0.5) ? SIZES.slice() : SIZES.slice().reverse(); rule = pick(["prog", "latin", "row"]); }
     if (a === "count") { vals = shuf([1, 2, 3]); rule = attrs.includes("size") ? pick(["latin", "row", "col"]) : pick(L >= 5 ? ["prog", "latin", "row", "prog"] : ["prog", "latin", "row"]); }
@@ -2872,24 +2911,35 @@ function genMatrix(L) {
       else v = vals[c];                              // size progression
       g[r][c][a] = v;
     }
-    const nm = { shape: "shape", fill: "shading", size: "size", count: "number of shapes" }[a];
-    const list = a === "shape" ? vals.map(s => SHAPE_PL[s]).join(", ") : a === "fill" ? vals.map(f => FILLNAME[f]).join(", ") : a === "size" ? "small, medium, large" : "";
+    const nm = { shape: "shape", fill: "shading", size: "size", count: "number of shapes", rot: "direction" }[a];
+    const DIRN = { 0: "pointing up", 90: "pointing right", 180: "pointing down" };
+    const list = a === "shape" ? vals.map(s => SHAPE_PL[s]).join(", ") : a === "fill" ? vals.map(f => FILLNAME[f]).join(", ") : a === "size" ? "small, medium, large" : a === "rot" ? vals.map(d => DIRN[d]).join(", ") : "";
     if (rule === "row") ex.push(`Each row keeps a single ${nm}${list ? " (" + list + ")" : ""}.`);
     else if (rule === "col") ex.push(`Each column keeps a single ${nm}${list ? " (" + list + ")" : ""}.`);
     else if (rule === "latin") ex.push(`Every row and column contains each ${nm} exactly once${list ? " (" + list + ")" : ""}.`);
     else if (a === "count") ex.push(`Within each row, the number of shapes goes up by one from left to right.`);
     else ex.push(`Size goes ${vals[0] < vals[2] ? "up" : "down"} from left to right (small, medium, large).`);
   }
-  if (nVar < 4) ex.push("Everything else stays the same.");
+  if (attrs.length < 4) ex.push("Everything else stays the same.");
   const ans = g[2][2];
   const cands = [];
-  const alt = { shape: domain.shape || shuf(SHAPES).slice(0, 3), fill: FILLS, size: SIZES, count: [ans.count - 1, ans.count + 1, ans.count + 2].filter(n => n >= 1 && n <= (attrs.includes("size") ? 3 : 5)) };
-  for (const a of shuf(["shape", "fill", "size", "count"])) for (const v of alt[a]) if (v !== ans[a]) cands.push({ ...ans, [a]: v });
-  cands.unshift({ ...g[2][1] }, { ...g[1][2] });
-  const o = buildOpts(ans, cands.slice(0, 2).concat(shuf(cands.slice(2))), x => x, 6);
+  const alt = { shape: domain.shape || shuf(SHAPES).slice(0, 3), fill: FILLS, size: SIZES, count: [ans.count - 1, ans.count + 1, ans.count + 2].filter(n => n >= 1 && n <= (attrs.includes("size") ? 3 : 5)), rot: [0, 90, 180] };
+  const VARY = useRot ? ["shape", "fill", "size", "count", "rot"] : ["shape", "fill", "size", "count"];
+  for (const a of shuf(VARY)) for (const v of alt[a]) if (v !== ans[a]) cands.push({ ...ans, [a]: v });
+  // backups that change two attributes, in case single changes run short
+  const keys4 = useRot ? ["shape", "fill", "count", "rot"] : ["shape", "fill", "count"];
+  for (let t = 0; t < 30; t++) { const [a, b] = shuf(keys4).slice(0, 2); const x = { ...ans, [a]: pick(alt[a].filter(v => v !== ans[a])), [b]: pick(alt[b].filter(v => v !== ans[b])) }; if (x[a] !== undefined && x[b] !== undefined) cands.push(x); }
+  // no two choices may match in everything except size: size alone never separates options
+  const noSize = x => x.shape + "|" + x.fill + "|" + x.count + "|" + (x.rot || 0);
+  const seenNS = new Set([noSize(ans)]);
+  const pool = [];
+  for (const x of [{ ...g[2][1] }, { ...g[1][2] }].concat(shuf(cands.filter(x => x.size === ans.size)), shuf(cands))) {
+    const k = noSize(x); if (seenNS.has(k)) continue; seenNS.add(k); pool.push(x);
+  }
+  const o = buildOpts(ans, pool, x => x, 6);
   const maxC = Math.max(...g.flat().map(x => x.count), ...o.options.map(x => x.count));
   const R = BASER[maxC];
-  o.options = o.options.map(x => figSVG(x, 66, R));
+  o.options = o.options.map(x => figSVG(x, 76, R));
   let cells = "";
   for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++)
     cells += (r === 2 && c === 2) ? `<div class="miss">?</div>` : `<div>${figSVG(g[r][c], 76, R)}</div>`;
@@ -2898,7 +2948,26 @@ function genMatrix(L) {
 
 /* ---- odd one out: figures ---- */
 const EVEN = ["square", "diamond", "hexagon"], ODDS = ["triangle", "pentagon"];
+function oddTotalSides() {
+  const maj = [["triangle", 4], ["square", 3], ["diamond", 3], ["hexagon", 2]];
+  const SIDES = { triangle: 3, square: 4, diamond: 4, pentagon: 5, hexagon: 6 };
+  const odds = [["pentagon", 2], ["triangle", 3], ["square", 2], ["pentagon", 3], ["hexagon", 1], ["diamond", 2], ["triangle", 5]];
+  for (let tries = 0; tries < 200; tries++) {
+    const [os, oc] = pick(odds), odd = ri(0, 4);
+    const m = shuf(maj), it = [];
+    for (let i = 0, j = 0; i < 5; i++) it.push(i === odd ? spec(os, oc, "none", 1) : spec(m[j][0], m[j++][1], "none", 1));
+    it.forEach(x => x.fill = pick(FILLS));
+    let bad = false;
+    for (const a of ["shape", "fill", "count"]) { const cnt = {}; it.forEach(x => cnt[x[a]] = (cnt[x[a]] || 0) + 1); const vs = Object.values(cnt); if (vs.includes(4) && vs.includes(1)) bad = true; }
+    if (bad) continue;
+    HARD = true;
+    return { prompt: "Which figure is the odd one out?", fig: "", options: it.map(s => figSVG(s, 66, BASER[Math.max(...it.map(x => x.count))])), answer: odd,
+      explain: `Count every side: four figures have 12 sides in total (4 triangles, 3 squares, 3 diamonds or 2 hexagons); this one has ${oc} \u00d7 ${SIDES[os]} = ${oc * SIDES[os]}.` };
+  }
+  return null;
+}
 function genOddFig(L) {
+  if (L >= 9 && chance(0.55)) { const p = oddTotalSides(); if (p) return p; }
   const targets = L >= 6 ? ["shape", "fill", "count", "size", "parity"] : L >= 3 ? ["shape", "fill", "count", "size"] : ["shape", "fill", "count"];
   const target = pick(targets);
   const noiseN = L <= 2 ? 0 : L <= 4 ? 1 : L <= 7 ? 2 : 3;
@@ -2965,7 +3034,21 @@ function genOddNum(L) {
     return [ms, o, `Four are perfect cubes; ${o} is a square, not a cube.`]; });
   if (L >= 7) types.push(() => { const ms = shuf(TRI.slice(3, 15)).slice(0, 4); let o; do { o = ri(10, 120); } while (TRI.includes(o));
     return [ms, o, `Four are triangular numbers (1, 3, 6, 10, 15, …); ${o} is not.`]; });
-  const [ms, o, ex] = pick(types)();
+  const hardT = [];
+  if (L >= 9) {
+    hardT.push(() => { const P = []; for (let n = 3; n <= 15; n++) P.push(n * (n + 1)); const ms = shuf(P).slice(0, 4);
+      let o; do { o = pick(P) + pick([-4, -2, 2, 4]); } while (P.includes(o)); return [ms, o, `Four are n \u00d7 (n + 1), e.g. 7 \u00d7 8 = 56; ${o} is not.`]; });
+    hardT.push(() => { const r = ri(1, 6), par = ri(0, 1), ms = [];   // all five share parity, so odd/even can't point elsewhere
+      while (ms.length < 4) { const x = 7 * ri(3, 20) + r; if (x % 2 === par && !ms.includes(x)) ms.push(x); }
+      let o; do { o = ri(22, 145); } while (o % 7 === r || o % 2 !== par); return [ms, o, `Four leave remainder ${r} when divided by 7; ${o} leaves ${o % 7}.`]; });
+  }
+  if (L >= 10) hardT.push(() => { const dprod = n => String(n).split("").reduce((a, b) => a * b, 1);
+    const P = pick([12, 18, 24, 36]); const pool = []; for (let n = 23; n < 1000; n++) if (dprod(n) === P) pool.push(n);
+    const ms = shuf(pool).slice(0, 4); let o; do { o = ri(23, 999); } while (dprod(o) === P || dprod(o) === 0 || Math.abs(dprod(o) - P) > 12);
+    return [ms, o, `The digits of four numbers multiply to ${P}; ${o}'s multiply to ${dprod(o)}.`]; });
+  const goHard = hardT.length && chance(0.55);
+  if (goHard) HARD = true;
+  const [ms, o, ex] = (goHard ? pick(hardT) : pick(types))();
   const all = shuf(ms.concat([o]));
   return { prompt: "Which number is the odd one out?", fig: "", options: all.map(V), answer: all.indexOf(o), explain: ex };
 }
@@ -2986,15 +3069,17 @@ function panelSVG(p, px) {
 function genSeries(L) {
   const nC = L <= 3 ? 1 : L <= 6 ? 2 : 3;
   const ch = shuf(["arrow", "dot", "shade"]).slice(0, nC);
+  const accel = L >= 9 && chance(0.55);    // 9+: the arrow's turn grows each step
+  if (accel) { HARD = true; if (!ch.includes("arrow")) ch[0] = "arrow"; }
   const N = L >= 5 ? 8 : 4;
   const r0 = pick([0, 45, 90, 135, 180, 225, 270, 315]);
-  const dr = ch.includes("arrow") ? pick(L < 5 ? [90, -90] : [45, -45, 90, 135, -135]) : 0;
+  const dr = accel ? pick([45, -45]) : ch.includes("arrow") ? pick(L < 5 ? [90, -90] : [45, -45, 90, 135, -135]) : 0;
   const hasDot = ch.includes("dot") || chance(0.5), p0 = ri(0, N - 1);
   const dp = ch.includes("dot") ? pick(N === 8 ? [1, 2, 3, -1, -2] : [1, -1]) : 0;
   const hasQ = ch.includes("shade") || chance(0.4), q0 = ri(0, 3);
   const dq = ch.includes("shade") ? pick([1, -1, 2]) : 0;
   const md = (x, m) => ((x % m) + m) % m;
-  const at = i => ({ rot: md(r0 + i * dr, 360), pos: hasDot ? md(p0 + i * dp, N) : -1, q: hasQ ? md(q0 + i * dq, 4) : -1, N });
+  const at = i => ({ rot: md(r0 + (accel ? dr * i * (i + 1) / 2 : i * dr), 360), pos: hasDot ? md(p0 + i * dp, N) : -1, q: hasQ ? md(q0 + i * dq, 4) : -1, N });
   const ans = at(4);
   const cands = [at(3), at(5)];
   for (const d of [45, -45, 90, 180]) cands.push({ ...ans, rot: md(ans.rot + d, 360) });
@@ -3003,7 +3088,8 @@ function genSeries(L) {
   const o = buildOpts(ans, shuf(cands), p => panelSVG(p, 62), 6);
   const cw = (d, unit) => `${Math.abs(d)} ${unit}${Math.abs(d) > 1 ? "s" : ""} ${d > 0 ? "clockwise" : "counter-clockwise"}`;
   const ex = [];
-  if (dr) ex.push(`The arrow turns ${Math.abs(dr)}° ${dr > 0 ? "clockwise" : "counter-clockwise"} each step.`);
+  if (accel) ex.push(`The arrow turns ${dr > 0 ? "clockwise" : "counter-clockwise"} 45°, then 90°, then 135°, then 180°: each turn is 45° more than the last.`);
+  else if (dr) ex.push(`The arrow turns ${Math.abs(dr)}° ${dr > 0 ? "clockwise" : "counter-clockwise"} each step.`);
   if (dp) ex.push(`The dot moves ${cw(dp, N === 8 ? "position" : "corner")} each step.`);
   if (dq) ex.push(`The shaded quarter moves ${cw(dq, "quarter")} each step.`);
   ex.push("Anything else stays put.");
@@ -3022,9 +3108,12 @@ function genSymbols(L) {
   const v = shuf(Array.from({ length: maxV - 1 }, (_, i) => i + 2)).slice(0, k);
   const S = i => `<span class="sxSym" style="color:${sy[i][1]}">${sy[i][0]}</span>`;
   const eqs = [];
-  if (L >= 5 && chance(0.4)) eqs.push([`${S(0)} × ${S(0)}`, v[0] * v[0]]);
+  const sys = L >= 9 && chance(0.55);      // 9+: no line gives a symbol away; the first two must be solved together
+  if (sys) { HARD = true; if (v[0] < v[1]) [v[0], v[1]] = [v[1], v[0]];
+    eqs.push([`${S(0)} + ${S(1)}`, v[0] + v[1]], [`${S(0)} − ${S(1)}`, v[0] - v[1]]); }
+  else if (L >= 5 && chance(0.4)) eqs.push([`${S(0)} × ${S(0)}`, v[0] * v[0]]);
   else { const m = ri(2, 3); eqs.push([Array(m).fill(S(0)).join(" + "), m * v[0]]); }
-  for (let i = 1; i < k; i++) {
+  for (let i = sys ? 2 : 1; i < k; i++) {
     const j = ri(0, i - 1), op = pick(L < 3 ? ["+"] : L < 6 ? ["+", "−", "2+"] : ["+", "−", "×", "2+"]);
     if (op === "+") eqs.push([`${S(i)} + ${S(j)}`, v[i] + v[j]]);
     else if (op === "2+") eqs.push([`${S(i)} + ${S(i)} + ${S(j)}`, 2 * v[i] + v[j]]);
@@ -3041,7 +3130,7 @@ function genSymbols(L) {
   const fig = `<div class="sxEq">${shown.map(([l, r]) => `<div>${l} = ${r}</div>`).join("")}<div class="sxAsk">${q} = <span class="sxQ">?</span></div></div>`;
   const o = buildOpts(ans, [ans + 1, ans - 1, ans + 2, ans - 2, ans + v[0], v[k - 1]], V, 6, numFill(ans, numSpan(ans)));
   return { prompt: "Each symbol stands for a whole number. Solve for the last line.", fig, ...o,
-    explain: sy.map((_, i) => `${S(i)} = ${v[i]}`).join(", ") + (L >= 6 ? " (multiply before adding or subtracting)." : ".") };
+    explain: (sys ? `Add the ${S(0)} + ${S(1)} and ${S(0)} − ${S(1)} lines: 2${S(0)} = ${2 * v[0]}. Then ` : "") + sy.map((_, i) => `${S(i)} = ${v[i]}`).join(", ") + (L >= 6 ? " (multiply before adding or subtracting)." : ".") };
 }
 
 /* ---- number analogies ---- */
@@ -3056,15 +3145,20 @@ function anaPool() {
     { min: 5, lab: "x³", f: x => x ** 3, max: 7 }, { min: 5, lab: "(x + 1)²", f: x => (x + 1) ** 2 },
     { min: 6, lab: "2x²", f: x => 2 * x * x }, { min: 6, lab: "x(x + 1) ÷ 2", f: x => x * (x + 1) / 2 },
     { min: 6, lab: "2ˣ", f: x => 2 ** x, max: 9 }, { min: 7, lab: "x³ − x", f: x => x ** 3 - x, max: 7 },
-    { min: 7, lab: "3x² − 1", f: x => 3 * x * x - 1 }, { min: 8, lab: "x³ + 1", f: x => x ** 3 + 1, max: 7 });
+    { min: 7, lab: "3x² − 1", f: x => 3 * x * x - 1 }, { min: 8, lab: "x³ + 1", f: x => x ** 3 + 1, max: 7 },
+    { min: 9, lab: "x² + 2x", f: x => x * x + 2 * x }, { min: 9, lab: "2x² − 3x", f: x => 2 * x * x - 3 * x },
+    { min: 9, lab: "x² + 3x − 1", f: x => x * x + 3 * x - 1 }, { min: 9, lab: "x³ − 2x", f: x => x ** 3 - 2 * x, max: 7 },
+    { min: 10, lab: "x³ − x²", f: x => x ** 3 - x * x, max: 7 }, { min: 10, lab: "x³ + x", f: x => x ** 3 + x, max: 7 },
+    { min: 10, lab: "2ˣ + x", f: x => 2 ** x + x, max: 9 }, { min: 10, lab: "3x² − 2x + 1", f: x => 3 * x * x - 2 * x + 1 });
   return P;
 }
 const ANA = anaPool();
 function genAnalogy(L) {
   for (let tries = 0; tries < 100; tries++) {
     const fn = weighted(ANA, L);
-    const xs = shuf(Array.from({ length: (fn.max || 12) }, (_, i) => i + 1)).slice(0, 4);
-    const ex = xs.slice(0, 3), qx = xs[3], ans = fn.f(qx);
+    const nEx = L >= 9 ? 4 : 3;               // a 4th pair at 9+ so a quadratic can't fake a cubic
+    const xs = shuf(Array.from({ length: (fn.max || 12) }, (_, i) => i + 1)).slice(0, nEx + 1);
+    const ex = xs.slice(0, nEx), qx = xs[nEx], ans = fn.f(qx);
     const clash = ANA.some(g => g !== fn && ex.every(x => g.f(x) === fn.f(x)) && g.f(qx) !== ans);
     if (clash) continue;
     const pairs = ex.map(x => `<span>${x} → ${fn.f(x)}</span>`).join("") + `<span>${qx} → <span class="sxQ">?</span></span>`;
@@ -3083,6 +3177,10 @@ const GOPS = [
   { min: 6, lab: "a² + b = c", f: (a, b) => a * a + b, g: () => [ri(2, 9), ri(1, 15)], w: (a, b) => `${a}² + ${b} = ${a * a + b}` },
   { min: 7, lab: "(a − b)² = c", f: (a, b) => (a - b) ** 2, g: () => { const b = ri(1, 10); return [b + ri(1, 8), b]; }, w: (a, b) => `(${a} − ${b})² = ${(a - b) ** 2}` },
   { min: 8, lab: "a × b + a + b = c", f: (a, b) => a * b + a + b, g: () => [ri(2, 9), ri(2, 9)], w: (a, b) => `${a} × ${b} + ${a} + ${b} = ${a * b + a + b}` },
+  { min: 9, lab: "a² − b² = c", f: (a, b) => a * a - b * b, g: () => { const b = ri(1, 9); return [b + ri(1, 6), b]; }, w: (a, b) => `${a}² − ${b}² = ${a * a - b * b}` },
+  { min: 9, lab: "a × b − (a + b) = c", f: (a, b) => a * b - a - b, g: () => [ri(2, 9), ri(2, 9)], w: (a, b) => `${a} × ${b} − (${a} + ${b}) = ${a * b - a - b}` },
+  { min: 10, lab: "a² + b² = c", f: (a, b) => a * a + b * b, g: () => [ri(1, 9), ri(1, 9)], w: (a, b) => `${a}² + ${b}² = ${a * a + b * b}` },
+  { min: 10, lab: "2 × a × b − a = c", f: (a, b) => 2 * a * b - a, g: () => [ri(2, 9), ri(2, 9)], w: (a, b) => `2 × ${a} × ${b} − ${a} = ${2 * a * b - a}` },
 ];
 function genGrid(L) {
   for (let tries = 0; tries < 200; tries++) {
@@ -3121,22 +3219,23 @@ const THEMES = [
   { more: "heavier than", less: "lighter than", top: "heaviest", bot: "lightest" },
 ];
 function genOrder(L) {
-  const T = pick(THEMES), n = L <= 2 ? 4 : L <= 5 ? 5 : 6;
+  const T = pick(THEMES), n = L <= 2 ? 4 : L <= 5 ? 5 : L <= 8 ? 6 : 7;
+  if (L >= 9) HARD = true;
   const nm = shuf(NAMES).slice(0, n);          // nm[0] is the "most"
   const pairs = []; for (let i = 0; i < n - 1; i++) pairs.push(i);
   const clues = [];
   const used = new Set();
   if (L >= 7) for (const i of shuf(pairs)) {
-    if (i + 1 < n - 1 && !used.has(i) && !used.has(i + 1) && chance(0.6)) {
+    if (i + 1 < n - 1 && !used.has(i) && !used.has(i + 1) && chance(L >= 9 ? 0.95 : 0.6)) {
       used.add(i); used.add(i + 1);
       clues.push(`${nm[i + 1]} is ${T.less} ${nm[i]} but ${T.more} ${nm[i + 2]}.`);
     }
   }
   for (const i of pairs) if (!used.has(i)) clues.push(chance(0.5) ? `${nm[i]} is ${T.more} ${nm[i + 1]}.` : `${nm[i + 1]} is ${T.less} ${nm[i]}.`);
   if (L >= 5) for (let r = 0; r < (L >= 8 ? 2 : 1); r++) { const i = ri(0, n - 3), j = ri(i + 2, n - 1); clues.push(chance(0.5) ? `${nm[i]} is ${T.more} ${nm[j]}.` : `${nm[j]} is ${T.less} ${nm[i]}.`); }
-  const k = L <= 2 ? pick([0, n - 1]) : ri(0, n - 1);
+  const k = L <= 2 ? pick([0, n - 1]) : L >= 9 ? ri(2, n - 3) : ri(0, n - 1);   // 9+: always a middle place
   const q = k === 0 ? `Who is the ${T.top}?` : k === n - 1 ? `Who is the ${T.bot}?` : k < n / 2 ? `Who is the ${ORD(k + 1)} ${T.top}?` : `Who is the ${ORD(n - k)} ${T.bot}?`;
-  const o = buildOpts(nm[k], nm, V, n);
+  const o = buildOpts(nm[k], nm, V, Math.min(n, 6));
   return { prompt: q, fig: `<div class="sxClues">${shuf(clues).map(c => `<div>• ${c}</div>`).join("")}</div>`, ...o,
     explain: `From ${T.top} to ${T.bot}: ${nm.join(" › ")}.` };
 }
@@ -3164,6 +3263,12 @@ const SYL = [
   { min: 8, p: ["No A are B.", "All C are A.", "All D are C."], c: "No D are B.", v: 1, why: "D ⊂ C ⊂ A, and A shares nothing with B." },
   { min: 8, p: ["All A are B.", "No B are C.", "Some D are C."], c: "Some D are not A.", v: 1, why: "The D that are C aren't B, so they can't be A." },
   { min: 8, p: ["Some A are B.", "No B are C.", "All D are C."], c: "Some A are not D.", v: 1, why: "The A that are B aren't C, so they aren't D." },
+  { min: 9, p: ["All A are B.", "Some C are not B."], c: "Some C are not A.", v: 1, why: "The C outside B can't be inside A, since A sits inside B." },
+  { min: 9, p: ["No A are B.", "All C are B.", "Some D are C."], c: "Some D are not A.", v: 1, why: "The D that are C are B, so they can't be A." },
+  { min: 9, p: ["All A are B.", "Some B are not C."], c: "Some A are not C.", v: 0, why: "The B outside C might all lie outside A." },
+  { min: 10, p: ["Some A are B.", "All B are C.", "No C are D."], c: "Some A are not D.", v: 1, why: "The A that are B are C, and nothing that is C is D." },
+  { min: 10, p: ["All A are B.", "No B are C.", "Some D are not C."], c: "Some D are A.", v: 0, why: "The D outside C could all lie outside A as well." },
+  { min: 10, p: ["No A are B.", "Some B are C.", "All C are D."], c: "Some D are not A.", v: 1, why: "The B that are C are D, and being B they can't be A." },
 ];
 const CLAUSES = [
   [["the gong sounds", "the gong does not sound"], ["the monks dance", "the monks do not dance"]],
@@ -3181,14 +3286,20 @@ const PROP = [
   { min: 6, p: ["P only if Q.", "P."], c: "Q.", v: 1, why: "“P only if Q” means P can't happen without Q." },
   { min: 6, p: ["P only if Q.", "Q."], c: "P.", v: 0, why: "Q is required for P, but doesn't force it." },
   { min: 7, p: ["P only if Q.", "nQ."], c: "nP.", v: 1, why: "Without Q, P is impossible." },
+  { min: 9, p: ["If P, then Q.", "If Q, then R.", "nR."], c: "nP.", v: 1, why: "Chained together, the first condition would force the last result, and that result didn't happen." },
+  { min: 9, p: ["If P, then Q.", "If Q, then R.", "R."], c: "P.", v: 0, why: "The last result could have come about some other way (affirming the consequent, through a chain)." },
+  { min: 9, p: ["Either P or Q.", "nP."], c: "Q.", v: 1, why: "At least one of the two holds, and the first is ruled out." },
+  { min: 10, p: ["Either P or Q.", "P."], c: "nQ.", v: 0, why: "\u201cEither \u2026 or\u201d here doesn't rule out both being true at once." },
+  { min: 10, p: ["P only if Q.", "Q only if R.", "nR."], c: "nP.", v: 1, why: "Without the last condition the middle one can't happen, so neither can the first." },
+  { min: 10, p: ["If P, then Q.", "If nP, then R.", "nQ."], c: "R.", v: 1, why: "The missing result rules out the first condition, and its absence triggers the second rule." },
 ];
 const cap = s => s[0].toUpperCase() + s.slice(1);
 function genSyl(L) {
   const prop = chance(0.35);
   const form = weighted(prop ? PROP : SYL, L);
   let fill;
-  if (prop) { const [P, Q] = pick(CLAUSES);
-    fill = s => cap(s.replace(/nP/g, P[1]).replace(/nQ/g, Q[1]).replace(/\bP\b/g, P[0]).replace(/\bQ\b/g, Q[0])); }
+  if (prop) { const [c1, c2] = shuf(CLAUSES).slice(0, 2), [P, Q] = c1, R = c2[0];
+    fill = s => cap(s.replace(/nP/g, P[1]).replace(/nQ/g, Q[1]).replace(/nR/g, R[1]).replace(/\bP\b/g, P[0]).replace(/\bQ\b/g, Q[0]).replace(/\bR\b/g, R[0])); }
   else { const w = shuf(WORDS).slice(0, 4), m = { A: w[0], B: w[1], C: w[2], D: w[3] }; fill = s => s.replace(/\b[ABCD]\b/g, x => m[x]); }
   const prem = (L >= 3 ? shuf(form.p) : form.p).map(fill);
   const fig = `<div class="sxPrem">${prem.map(p => `<div>${p}</div>`).join("")}<div class="sxConc">∴ ${fill(form.c)}</div></div>`;
@@ -3220,7 +3331,7 @@ function save() { try { localStorage.setItem("mt_sphinx_v1", JSON.stringify(stat
 
 function makePuzzle(catId, L) {
   for (let tries = 0; tries < 8; tries++) {
-    try { const p = CAT[catId].gen(L); if (p && p.options && p.options.length) { p.cat = catId; p.L = L; return p; } } catch (e) { console.warn("sphinx", catId, e); }
+    try { HARD = false; const p = CAT[catId].gen(L); if (p && p.options && p.options.length) { p.cat = catId; p.L = L; p.hard = HARD; return p; } } catch (e) { console.warn("sphinx", catId, e); }
   }
   return makePuzzle("seq", L);
 }
