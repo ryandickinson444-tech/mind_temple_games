@@ -145,33 +145,33 @@
   .niche.occ:hover { border-color: var(--red); }
   .niche.sel { border: 2px solid var(--red); width: 16px; height: 16px; }
 
-  /* ---- RULE SCROLLS ---- */
-  #ecaView { position: fixed; inset: 30px 0 24px; }
-  #ecaBar {
-    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-    padding: 6px 10px; border-bottom: 2px solid var(--blk); background: var(--wht);
-  }
-  #ecaBar .lab { color: var(--dgy); }
-  #ecaRuleNum { width: 56px; font-weight: bold; color: var(--blu); }
-  #ecaCanvas { display: block; background: var(--wht); }
-  #ecaName { color: var(--mag); font-weight: bold; min-width: 150px; }
-  #ecaLaw {
-    display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap;
-    padding: 6px 10px 8px; border-bottom: 2px solid var(--blk); background: var(--wht);
-    user-select: none;
-  }
-  #ecaLaw .lab { color: var(--dgy); align-self: center; }
-  .lawItem { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-  .lawTop { display: flex; gap: 1px; }
-  .lawCell { width: 12px; height: 12px; border: 1px solid var(--blk); background: var(--wht); }
-  .lawCell.on { background: var(--blk); }
-  .lawOut {
-    width: 14px; height: 14px; border: 1px solid var(--blk); background: var(--wht);
-    cursor: pointer; box-shadow: 2px 2px 0 var(--lgy);
-  }
-  .lawOut.on { background: var(--blk); }
-  .lawOut:hover { outline: 2px solid var(--yel); }
-  #ecaLaw .hintTxt { color: var(--dgy); align-self: center; }
+  /* ---- THE GARDEN (beta) ---- */
+  #gdView { position: fixed; inset: 30px 0 24px; display: none; }
+  #gdView.on { display: flex; }
+  #gdStage { flex: 1; min-width: 0; position: relative; background: #0a0a0e; overflow: hidden; }
+  #gdCanvas { display: block; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
+  #gdSide { width: 330px; flex: none; overflow-y: auto; border-left: 2px solid var(--blk); padding: 8px 10px 16px; background: var(--wht); }
+  #gdSide h3 { margin: 0 0 6px; font-size: 15px; background: var(--blu); color: var(--wht); padding: 3px 8px; }
+  .gdBeta { background: var(--yel); color: var(--red); font-weight: bold; padding: 0 5px; border: 1px solid var(--red); margin-left: 6px; }
+  #gdSide .sub { color: var(--dgy); font-size: 13px; margin-bottom: 8px; }
+  .gdRow { display: grid; grid-template-columns: 84px 1fr 70px; align-items: center; gap: 6px; font-size: 13px; margin: 3px 0; }
+  .gdLab { color: var(--blk); } .gdVal { color: var(--blu); text-align: right; }
+  .gdRow input { width: 100%; }
+  #gdSide .actions { margin: 6px 0; }
+  #gdSide .actions button { font-size: 13px; padding: 2px 6px; }
+  .gdBrush.cur { background: var(--blu) !important; color: var(--wht) !important; }
+  #gdStats { font-size: 13px; color: var(--dgy); margin: 8px 0 4px; }
+  #gdGraph { display: block; width: 100%; height: 90px; }
+  .gdKey { font-size: 12px; color: var(--dgy); margin: 2px 0 8px; }
+  .gdKey i { font-style: normal; font-weight: bold; }
+  #gdPeak { font-size: 13px; margin: 6px 0; min-height: 18px; }
+  .gdSp { display: flex; gap: 8px; align-items: center; font-size: 12px; margin: 4px 0; border: 1px solid var(--lgy); padding: 3px; }
+  .gdSp canvas { flex: none; border: 1px solid var(--blk); }
+  .gdSp span { color: var(--dgy); }
+  .gdLegend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; margin: 6px 0; }
+  .gdLegend b { display: inline-block; width: 10px; height: 10px; border: 1px solid var(--blk); vertical-align: -1px; margin-right: 3px; }
+  #gdNote { color: var(--red); font-size: 13px; }
+  @media (max-width: 700px) { #gdView.on { flex-direction: column; } #gdSide { width: auto; border-left: none; border-top: 2px solid var(--blk); max-height: 50%; } }
 
   /* ---- LIGHTS OUT ---- */
   #loView { position: fixed; inset: 30px 0 24px; overflow-y: auto; }
@@ -286,7 +286,7 @@
     <button class="mbtn" data-view="home">Home</button>
     <button class="mbtn" data-view="turmite">Turmite Lab</button>
     <button class="mbtn" data-view="t3d">Turmite 3D</button>
-    <button class="mbtn" data-view="eca">Rule Scrolls</button>
+    <button class="mbtn" data-view="garden">Garden &beta;</button>
     <button class="mbtn" data-view="lights">Lights Out</button>
     <button class="mbtn" data-view="sphinx">Sphinx</button>
     <button class="mbtn" id="oracleBtn" title="draw three words from the well">Oracle</button>
@@ -317,10 +317,10 @@
       <div class="docline">║<span class="inner">  <span style="color:var(--blu)">▀ ▀  </span>    <span style="color:var(--dgy)">quality-diversity search; collect a zoo of lasting order.</span>  </span>║</div>
       </div>
       <div class="docline">║<span class="inner">                                                                      </span>║</div>
-      <div class="docEntry" data-view="eca">
-      <div class="docline">║<span class="inner">  <span style="color:var(--grn)">  ▄  </span>  <span style="color:var(--grn)">▶ </span><span style="color:var(--grn);font-weight:bold;text-decoration:underline">RULE SCROLLS</span>                                               </span>║</div>
-      <div class="docline">║<span class="inner">  <span style="color:var(--grn)"> ▄█▄ </span>    <span style="color:var(--blk)">The 256 elementary 1-D laws, scrolling like scripture.</span>     </span>║</div>
-      <div class="docline">║<span class="inner">  <span style="color:var(--grn)">▄█▀█▄</span>    <span style="color:var(--dgy)">Rule 30 boils. Rule 90 weaves. Rule 110 computes anything.</span> </span>║</div>
+      <div class="docEntry" data-view="garden">
+      <div class="docline">║<span class="inner">  <span style="color:var(--grn)"> ▄█▄ </span>  <span style="color:var(--grn)">▶ </span><span style="color:var(--grn);font-weight:bold;text-decoration:underline">THE GARDEN</span> <span style="color:var(--red);font-weight:bold">[BETA]</span>                                          </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--grn)">█▀▄▀█</span>    <span style="color:var(--blk)">Creatures built from cells eat, hunt, breed and mutate.</span>    </span>║</div>
+      <div class="docline">║<span class="inner">  <span style="color:var(--grn)"> ▀ ▀ </span>    <span style="color:var(--dgy)">Bend the environment; watch species climb and get stuck.</span>   </span>║</div>
       </div>
       <div class="docline">║<span class="inner">                                                                      </span>║</div>
       <div class="docEntry" data-view="lights">
@@ -395,12 +395,14 @@
   <div id="searchPanel" class="panel">
     <h3>Evolve &mdash; a zoo of lasting order</h3>
     <div class="legend">
-      A quality-diversity search (MAP-Elites): every rule is scored (repeating <b>texture</b>
-      &times; a <b>fractal-dimension</b> band &times; <b>symmetry</b>, with bonuses for
-      <i>emergent</i> order and ballistic <b>highways</b>) and then filed into a niche by its
-      character &mdash; dimension across, symmetry down. Each niche keeps its own champion, so
-      lacy triangles, highways, and crystals all hold seats. Parents are drawn from across the
-      map, which keeps the search discovering <i>different</i> things, not just better ones.
+      A quality-diversity search (MAP-Elites): every rule is scored on <b>order that lasts</b>
+      (repeating <b>texture</b> or clean <b>colour regions</b> &times; a <b>fractal-dimension</b>
+      band &times; <b>symmetry</b>, averaged over the whole run, minus any <b>mess</b>) &times;
+      <b>life</b>, how much of the picture keeps re-forming (a static one forfeits up to 60%),
+      with a bonus for <i>emergent</i> order. Then it is filed into a niche by its character &mdash;
+      dimension across, symmetry down. Each niche keeps its own champion, so lacy triangles,
+      living fields, and crystals all hold seats. Parents are drawn from across the map, which
+      keeps the search discovering <i>different</i> things, not just better ones.
     </div>
     <div class="actions">
       <button id="searchToggle">Start</button>
@@ -424,32 +426,34 @@
   </div>
   </div><!-- /turmiteView -->
 
-  <!-- ================= RULE SCROLLS ================= -->
-  <div id="ecaView" class="view">
-    <div id="ecaBar">
-      <span class="lab">rule</span>
-      <input id="ecaRuleNum" type="number" min="0" max="255" value="30">
-      <button id="ecaRandomRule">Random</button>
-      <span class="lab">famous:</span>
-      <button class="ecaPreset" data-r="30">30</button>
-      <button class="ecaPreset" data-r="54">54</button>
-      <button class="ecaPreset" data-r="90">90</button>
-      <button class="ecaPreset" data-r="110">110</button>
-      <button class="ecaPreset" data-r="184">184</button>
-      <span class="sep"></span>
-      <span class="lab">seed</span>
-      <button id="ecaSeedBtn">single</button>
-      <button id="ecaRestart">Restart</button>
-      <button id="ecaPause">Pause</button>
-      <label><span class="lab">speed</span> <input id="ecaSpeed" type="range" min="1" max="30" value="4"></label>
-      <span id="ecaName"></span>
+  <!-- ================= THE GARDEN (beta) ================= -->
+  <div id="gdView" class="view">
+    <div id="gdStage"><canvas id="gdCanvas"></canvas></div>
+    <div id="gdSide">
+      <h3>THE GARDEN <span class="gdBeta">BETA</span></h3>
+      <div class="sub">Preliminary version: rules and balance will change. Organisms are clusters of cells; every birth may mutate the body. Identical bodies form a species.</div>
+      <div class="gdLegend">
+        <span><b style="background:#FFFF55"></b>mouth</span><span><b style="background:#55FF55"></b>producer</span>
+        <span><b style="background:#55FFFF"></b>mover</span><span><b style="background:#FF5555"></b>killer</span>
+        <span><b style="background:#AA00AA"></b>armor</span><span><b style="background:#FFFFFF"></b>eye</span>
+        <span><b style="background:#283CC8"></b>food</span><span><b style="background:#555555"></b>wall</span>
+      </div>
+      <div class="actions">
+        <button id="gdPause">Pause</button> <button id="gdReset">Reset</button> <button id="gdExtinct" title="kill 90% at random">Extinction</button>
+      </div>
+      <div id="gdSliders"></div>
+      <div class="actions"><button id="gdPlants"></button></div>
+      <div class="actions"><span style="color:var(--dgy);font-size:13px">brush</span>
+        <button class="gdBrush cur" data-b="food">food</button><button class="gdBrush" data-b="wall">wall</button><button class="gdBrush" data-b="erase">erase</button><button class="gdBrush" data-b="life">life</button><button class="gdBrush" data-b="smite">smite</button>
+      </div>
+      <div id="gdNote"></div>
+      <div id="gdStats"></div>
+      <canvas id="gdGraph" width="306" height="90"></canvas>
+      <div class="gdKey"><i style="color:#0000AA">population</i> &middot; <i style="color:#AA00AA">species</i> &middot; <i style="color:#00AAAA">movers</i> &middot; <i style="color:#AA0000">killers</i></div>
+      <div id="gdPeak"></div>
+      <div style="color:var(--dgy);font-size:12px">biggest species alive</div>
+      <div id="gdSpecies"></div>
     </div>
-    <div id="ecaLaw">
-      <span class="lab">the law:</span>
-      <span id="lawItems" style="display:flex;gap:14px;flex-wrap:wrap"></span>
-      <span class="hintTxt">&larr; click an output cell to rewrite the law mid-scroll</span>
-    </div>
-    <canvas id="ecaCanvas"></canvas>
   </div>
 
   <!-- ================= LIGHTS OUT ================= -->
@@ -541,7 +545,9 @@
       textured sheets and lacy scaffolds; nothing for threads, helices, or space-filling noise),
       by 2-D/3-D <b>spread</b>, and by <b>symmetry</b> about the structure's own center
       (flat axes don't count). Emergent order and ballistic flight earn bonuses. Each niche of
-      the map &mdash; dimension across (1&rarr;3), symmetry down &mdash; keeps its own champion.
+      the map &mdash; dimension across (1.1&rarr;2.1), colour down &mdash; keeps its own champion.
+      Children take big jumps (2&ndash;5 edits, often after rearranging the whole rule) from
+      champions on the map's frontier, next to empty niches, and no rule is graded twice.
       The evolve arena is the bounded &plusmn;5000 cube (the wall ends a run, like the 2-D
       screen edge); only the live view wraps.
     </div>
@@ -560,7 +566,7 @@
         <button id="t3_loadBest">Load into view</button>
       </div>
     </div>
-    <div style="color:#888;font-size:12px">species map &mdash; fractal dimension 1.0&rarr;3.0 across, color &darr;</div>
+    <div style="color:#888;font-size:12px">species map &mdash; fractal dimension 1.1&rarr;2.1 across, color &darr;</div>
     <div id="t3_eliteMap"></div>
     <div style="color:#888;font-size:12px;margin-top:8px">top rules (click to view)</div>
     <div id="t3_topList"></div>
@@ -784,15 +790,17 @@ document.getElementById("ruleBtn").onclick = (e) => {
 // headless evaluation on a screen-sized TORUS (wrapping exactly like the lab), so the
 // full 1,000,000-step horizon is always graded and the thumbnail is the lab at that step.
 // Runs are sliced across ticks so a candidate never blocks the UI.
-const EV = { MAX: 1000000, SAMPLE: 50000, GRACE: 200000, CONTREP: 0.15, MINCOV: 1500, WANDER: 6 };
+const EV = { MAX: 1000000, SAMPLE: 50000, GRACE: 200000, CONTREP: 0.15, MINCOV: 1500, WANDER: 8,
+             LIFE_LO: 0.010, LIFE_HI: 0.025, LIFE_FLOOR: 0.40, HIGHWAY: 0.015 };
 // eval arena mirrors the on-screen world, so the seam is where the lab's seam is and
 // the best rules genuinely differ with the window size the app was opened at.
-let EW = 0, EH = 0, evalGrid = null, thumbGrid = null;
+let EW = 0, EH = 0, evalGrid = null, thumbGrid = null, prevGrid = null;
 function ensureEvalGrids() {
   if (evalGrid && EW === COLS && EH === ROWS) return;
   EW = COLS; EH = ROWS;
   evalGrid = new Uint8Array(EW * EH);   // in-progress evaluation
   thumbGrid = new Uint8Array(EW * EH);  // preview drawing
+  prevGrid = new Uint8Array(EW * EH);   // the evaluation as it was one sample ago (for LIFE)
 }
 const REL = ['L', 'R', 'N'];
 const ABS = ['^', '>', 'v', '<'];
@@ -813,30 +821,42 @@ function canonKey(r) { const a = r.join(""), b = mirrorRule(r).join(""); return 
 // pattern = repetition of TEXTURE. Tiles that are all-empty or all-filled don't count:
 // a solid flood-fill is uniform, not patterned. Repetition of the mixed (textured) tiles,
 // scaled by how much of the shape is texture, rewards crystals/lattices over blobs & noise.
+// COLOUR ORDER (repS, mixS) reads the same tiles by colour, solid ones included: a picture
+// made of big clean colour regions with straight edges uses few tile types (strong order),
+// noise uses a different type almost every time. mixS = share of tiles that hold an edge.
 function patternScore(g, W, H, minx, maxx, miny, maxy) {
   const stride = Math.max(1, Math.floor(Math.sqrt(((maxx - minx + 1) * (maxy - miny + 1)) / 90000)));
-  const freq = new Map();
-  let mixed = 0, nonEmpty = 0;
+  const freq = new Map(), sfreq = new Map();
+  let mixed = 0, nonEmpty = 0, smixed = 0;
   for (let y = miny; y < maxy; y += stride) {
     for (let x = minx; x < maxx; x += stride) {
-      let key = 0, ones = 0;
+      let key = 0, ones = 0, skey = 0, s0 = -1, same = true;
       for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 3; dx++) {
         const xx = x + dx, yy = y + dy;
-        const v = (xx < 0 || xx >= W || yy < 0 || yy >= H) ? 0 : (g[yy * W + xx] ? 1 : 0);
+        const st = (xx < 0 || xx >= W || yy < 0 || yy >= H) ? 0 : g[yy * W + xx];
+        const v = st ? 1 : 0;
         key = (key << 1) | v; ones += v;
+        skey = skey * 16 + st;
+        if (s0 < 0) s0 = st; else if (st !== s0) same = false;
       }
       if (ones === 0) continue;
       nonEmpty++;
+      sfreq.set(skey, (sfreq.get(skey) || 0) + 1);
+      if (!same) smixed++;
       if (ones === 9) continue;                 // solid interior: uniform, not texture
       mixed++; freq.set(key, (freq.get(key) || 0) + 1);
     }
   }
-  if (mixed < 20 || nonEmpty < 20) return { p: 0, rep: 0, tex: 0 };
+  let sent = 0;
+  for (const c of sfreq.values()) { const pp = c / nonEmpty; sent -= pp * Math.log2(pp); }
+  const repS = nonEmpty > 1 ? Math.max(0, 1 - sent / Math.log2(nonEmpty)) : 0;
+  const mixS = nonEmpty ? smixed / nonEmpty : 0;
+  if (mixed < 20 || nonEmpty < 20) return { p: 0, rep: 0, tex: 0, repS, mixS };
   let ent = 0;
   for (const c of freq.values()) { const pp = c / mixed; ent -= pp * Math.log2(pp); }
   const rep = 1 - ent / (Math.log2(Math.min(freq.size, 510)) || 1);  // texture repetition
   const tex = mixed / nonEmpty;                                       // texture fraction
-  return { p: rep * Math.pow(tex, 0.25), rep, tex };
+  return { p: rep * Math.pow(tex, 0.25), rep, tex, repS, mixS };
 }
 // symmetry about the pattern's own bounding-box center:
 // sx = mirror across vertical axis, sy = across horizontal axis, sr = 180° rotation (radial)
@@ -894,6 +914,43 @@ function boxDim(g, W, minx, maxx, miny, maxy) {
   }
   return { D, elong };
 }
+// COMPOSITION: how many distinct colour regions the picture is built from, read on a coarse
+// grid of 8x8 blocks (a block takes a colour when that colour holds 75% of it). One band or
+// two halves is a flag, not a composition; a field of triangles has dozens of regions.
+// solid = share of the PAINTED blocks that are solid colour rather than fine texture, so
+// lace and crystals (texture blocks) are judged by their texture, not by region count.
+let regLab = null, regSeen = null, regStack = null;
+function regionsOf(g, W, minx, maxx, miny, maxy) {
+  const B = 8, gw = Math.floor((maxx - minx + 1) / B), gh = Math.floor((maxy - miny + 1) / B), n = gw * gh;
+  if (gw < 2 || gh < 2) return { regions: 0, solid: 0 };
+  if (!regLab || regLab.length < n) { regLab = new Uint8Array(n); regSeen = new Uint8Array(n); regStack = new Int32Array(n); }
+  const cnt = new Uint8Array(16);
+  for (let by = 0; by < gh; by++) for (let bx = 0; bx < gw; bx++) {
+    cnt.fill(0);
+    const y0 = miny + by * B, x0 = minx + bx * B;
+    for (let y = y0; y < y0 + B; y += 2) for (let x = x0; x < x0 + B; x += 2) cnt[g[y * W + x]]++;
+    let m = 0; for (let v = 1; v < 16; v++) if (cnt[v] > cnt[m]) m = v;
+    regLab[by * gw + bx] = cnt[m] >= 12 ? m : 255;      // 16 samples per block, 12 = 75%
+  }
+  let solidB = 0, mixedB = 0;
+  for (let i = 0; i < n; i++) { const v = regLab[i]; if (v === 255) mixedB++; else if (v) solidB++; }
+  regSeen.fill(0, 0, n);
+  let regions = 0;
+  for (let i = 0; i < n; i++) {
+    if (regSeen[i] || regLab[i] === 255) continue;
+    const v = regLab[i]; let sp = 0, size = 0;
+    regStack[sp++] = i; regSeen[i] = 1;
+    while (sp) {
+      const j = regStack[--sp], x = j % gw; size++;
+      if (x > 0 && !regSeen[j - 1] && regLab[j - 1] === v) { regSeen[j - 1] = 1; regStack[sp++] = j - 1; }
+      if (x < gw - 1 && !regSeen[j + 1] && regLab[j + 1] === v) { regSeen[j + 1] = 1; regStack[sp++] = j + 1; }
+      if (j >= gw && !regSeen[j - gw] && regLab[j - gw] === v) { regSeen[j - gw] = 1; regStack[sp++] = j - gw; }
+      if (j + gw < n && !regSeen[j + gw] && regLab[j + gw] === v) { regSeen[j + gw] = 1; regStack[sp++] = j + gw; }
+    }
+    if (size >= 4) regions++;
+  }
+  return { regions, solid: solidB + mixedB ? solidB / (solidB + mixedB) : 0 };
+}
 // calibrated fractal band: 0 below D=1.05, full credit 1.25-1.65, 0 again by 1.80
 function bandScore(D) {
   if (D <= 1.05 || D >= 1.80) return 0;
@@ -903,18 +960,25 @@ function bandScore(D) {
 }
 // instantaneous quality: texture is the base; the fractal band is the big multiplier
 // (x2.5 swing), 2D spread and symmetry are mild multipliers.
-function qualityOf(ps, geo, sy, ch, div) {
+function qualityOf(ps, geo, sy, ch, div, mess) {
   const sym = Math.max(sy.sx, sy.sy, sy.sr);
+  // ORDER is either kind: binary texture (lace, weaves, crystals) or colour order (big clean
+  // regions with straight edges, e.g. triangles that fill the screen). A colour picture
+  // with almost no edges is a flood fill, so colour order needs edges.
+  const pS = ps.repS * Math.max(0, Math.min(1, (ps.mixS - 0.02) / 0.04));
+  const P = Math.max(ps.p, pS);
   const band0 = geo.D < 0 ? 0 : bandScore(geo.D);
   // lattice relief: the band exists to reject chaos at high dimension, but a dense
-  // pattern with strong tile repetition is a lattice, not a blob. Chaos (rep ~0.07)
-  // gets no relief; a checker/weave fill (rep ~0.5) gets most of its band credit back.
-  const lattice = geo.D < 0 ? 0 : Math.max(0, Math.min(1, (ps.rep - 0.35) / 0.25));
+  // pattern with strong tile repetition (or clean colour order) is not a blob. Chaos
+  // (rep ~0.07) gets no relief; a weave or a field of clean triangles gets it all back.
+  const lattice = geo.D < 0 ? 0 : Math.max(0, Math.min(1, (Math.max(ps.rep, pS) - 0.35) / 0.25));
   const band = band0 + (1 - band0) * lattice;
   const spread = 0.70 + 0.30 * Math.min(1, geo.elong / 0.35);
   const color = 0.55 + 0.45 * ch;                       // monochrome forfeits 45%
   const multi = 1 + 0.35 * Math.min(1, div);            // several distinct ordered fills
-  return { q: ps.p * (0.40 + 0.60 * band) * spread * (0.80 + 0.20 * sym) * color * multi, sym, band };
+  // MESS: share of the painted area that is chaotic noise. 1% is free; 10%+ forfeits 70%.
+  const clean = 1 - 0.70 * Math.max(0, Math.min(1, (mess - 0.01) / 0.09));
+  return { q: P * (0.40 + 0.60 * band) * spread * (0.80 + 0.20 * sym) * color * multi * clean, sym, band };
 }
 // chroma: entropy of the painted-state distribution, full credit at three balanced colors
 function chromaOf(g, W, N, minx, maxx, miny, maxy) {
@@ -932,13 +996,17 @@ function chromaOf(g, W, N, minx, maxx, miny, maxy) {
 // another color or orientation are another fill); the result is the entropy (bits) of
 // the cluster sizes: 0 for one fill everywhere, 1 for two equal ones. Judged on colors,
 // not occupancy: a three-tone weave is a different fill from a one-tone pinstripe.
+// Also returns MESS: the share of painted blocks (any block with 20+ painted tiles) whose
+// own colour-tile histogram, solid tiles included, is chaotic.
 function texturesOf(g, W, H, minx, maxx, miny, maxy) {
   const bw = maxx - minx + 1, bh = maxy - miny + 1;
   const B = Math.max(16, Math.ceil(Math.sqrt(bw * bh / 400)));
   const ts = Math.max(1, Math.floor(B / 14));           // tile stride inside a block
-  const blocks = []; let considered = 0;
+  const blocks = []; let considered = 0, painted = 0, messy = 0;
+  const solidBy = new Uint32Array(16);
   for (let by = miny; by <= maxy; by += B) for (let bx = minx; bx <= maxx; bx += B) {
     const hist = new Map(); let n = 0, cells = 0, occ = 0, solid = 0;
+    solidBy.fill(0);
     const y1 = Math.min(by + B, maxy) - 1, x1 = Math.min(bx + B, maxx) - 1;
     for (let y = by; y < y1; y += ts) for (let x = bx; x < x1; x += ts) {
       let key = 0, ones = 0, same = true, first = 0;
@@ -949,8 +1017,15 @@ function texturesOf(g, W, H, minx, maxx, miny, maxy) {
         key = key * 16 + v; if (v) ones++;
       }
       cells++; if (!ones) continue; occ++;
-      if (same) { solid++; continue; }                 // one color throughout: solid fill
+      if (same) { solid++; solidBy[first]++; continue; }   // one color throughout: solid fill
       hist.set(key, (hist.get(key) || 0) + 1); n++;
+    }
+    if (occ >= 20) {                                   // mess: judge every painted block
+      painted++;
+      let ent = 0;
+      for (const c of hist.values()) { const p = c / occ; ent -= p * Math.log2(p); }
+      for (const c of solidBy) if (c) { const p = c / occ; ent -= p * Math.log2(p); }
+      if (1 - ent / Math.log2(Math.min(occ, 510)) < 0.35) messy++;
     }
     if (!cells || occ / cells < 0.6) continue;         // not a filled region
     considered++;
@@ -960,7 +1035,8 @@ function texturesOf(g, W, H, minx, maxx, miny, maxy) {
     if (1 - ent / Math.log2(Math.min(n, 510)) < 0.35) continue;   // chaotic block
     blocks.push({ hist });
   }
-  if (considered < 4) return 0;
+  const mess = painted ? messy / painted : 0;
+  if (considered < 4) return { div: 0, mess };
   const ordered = blocks.length;
   const cos = (a, b) => { let d = 0, na = 0, nb = 0; for (const [k, v] of a) { na += v * v; const w = b.get(k); if (w) d += v * w; } for (const v of b.values()) nb += v * v; return d / Math.sqrt(na * nb); };
   const clusters = [];
@@ -972,7 +1048,7 @@ function texturesOf(g, W, H, minx, maxx, miny, maxy) {
   }
   let div = 0;                                          // shares are of ALL ordered blocks,
   for (const c of clusters) { const p = c.count / ordered; if (p >= 0.08) div -= p * Math.log2(p); }
-  return div;
+  return { div, mess };
 }
 
 
@@ -982,37 +1058,94 @@ function startEval(r) {
   ensureEvalGrids();
   const W = EW, H = EH, cx = W >> 1, cy = H >> 1;
   evalGrid.fill(0);
+  prevGrid.fill(0);
   curEval = {
     r, N: r.length, W, H,
     x: cx, y: cy, d: 0, cov: 0, ux: 0, uy: 0,          // ux/uy: unwrapped displacement
     minx: cx, maxx: cx, miny: cy, maxy: cy,
     s: 0, q: 0, at: 0, sym: 0, D: 0, first: -1, ball: 0, ch: 0, div: 0,
+    qSum: 0, qN: 0, allSum: 0, allN: 0,       // order at every sample: the score is its AVERAGE
+    lifeSum: 0, lifeN: 0, messSum: 0, messN: 0, lastS: -1,
+    regMax: 0, solidSum: 0, solidN: 0, lastSolid: 0,   // composition: richest picture it reached
+    left: false, culled: false,               // stopped composing: the rest of the run counts as 0
     ring: [],                                  // ant positions every 5k steps (highway detector)
     result: null
   };
+}
+// LIFE: cells that changed since the last sample TOGETHER WITH all 8 neighbours, i.e. whole
+// patches forming or re-forming, as a share of the screen. Solid triangles appearing and
+// flipping colour register fully; a highway re-painting its thin lane, noise flickering,
+// or lace creeping outward barely registers.
+function lifeSample(e) {
+  const g = evalGrid, p = prevGrid, W = e.W;
+  let area = 0;
+  const y0 = Math.max(1, e.miny), y1 = Math.min(e.H - 2, e.maxy);
+  const x0 = Math.max(1, e.minx), x1 = Math.min(W - 2, e.maxx);
+  for (let y = y0; y <= y1; y++) {
+    for (let i = y * W + x0, end = y * W + x1; i <= end; i++) {
+      if (g[i] === p[i]) continue;
+      if (g[i - 1] !== p[i - 1] && g[i + 1] !== p[i + 1] && g[i - W] !== p[i - W] && g[i + W] !== p[i + W] &&
+          g[i - W - 1] !== p[i - W - 1] && g[i - W + 1] !== p[i - W + 1] && g[i + W - 1] !== p[i + W - 1] && g[i + W + 1] !== p[i + W + 1]) area++;
+    }
+  }
+  p.set(g);
+  return area / (W * e.H);
 }
 function sampleQuality(e, updatePeak) {
   const g = evalGrid;
   const ps = patternScore(g, e.W, e.H, e.minx, e.maxx, e.miny, e.maxy);
   const geo = boxDim(g, e.W, e.minx, e.maxx, e.miny, e.maxy);
   const ch = chromaOf(g, e.W, e.N, e.minx, e.maxx, e.miny, e.maxy);
-  const div = texturesOf(g, e.W, e.H, e.minx, e.maxx, e.miny, e.maxy);
-  const { q, sym } = qualityOf(ps, geo, symScores(g, e.W, e.H, e.minx, e.maxx, e.miny, e.maxy), ch, div);
-  if (e.first < 0) e.first = q;
-  if (updatePeak && e.cov >= EV.MINCOV && q > e.q) { e.q = q; e.at = e.s; e.sym = sym; e.D = geo.D; e.ch = ch; e.div = div; }
+  const tx = texturesOf(g, e.W, e.H, e.minx, e.maxx, e.miny, e.maxy);
+  const reg = regionsOf(g, e.W, e.minx, e.maxx, e.miny, e.maxy);
+  if (reg.regions > e.regMax) e.regMax = reg.regions;
+  e.lastSolid = reg.solid;
+  if (e.s >= EV.GRACE) { e.solidSum += reg.solid; e.solidN++; }
+  const { q: q0, sym } = qualityOf(ps, geo, symScores(g, e.W, e.H, e.minx, e.maxx, e.miny, e.maxy), ch, tx.div, tx.mess);
+  const q = e.cov >= EV.MINCOV ? q0 : 0;
+  if (e.first < 0) e.first = q0;               // the first look, judged on its own merits
+  e.allSum += q; e.allN++;
+  if (e.s >= EV.GRACE) { e.qSum += q; e.qN++; e.messSum += tx.mess; e.messN++; }
+  if (e.s % EV.SAMPLE === 0) {                  // life is measured over whole 50k intervals
+    const l = lifeSample(e);
+    if (e.s > EV.SAMPLE) { e.lifeSum += l; e.lifeN++; }
+  }
+  e.lastS = e.s;
+  // the best single moment still places the rule on the species map (its D and symmetry)
+  if (updatePeak && q > e.q) { e.q = q; e.at = e.s; e.sym = sym; e.D = geo.D; e.ch = ch; e.div = tx.div; }
   return ps;
 }
 function finishEval() {
   const e = curEval;
-  sampleQuality(e, true);                       // final scan: score the terminal state too
-  // emergence: how much better the peak is than the first look (order that EMERGED),
-  // plus a bonus if the ant ever locked into ballistic (highway-style) motion.
-  const emerge = Math.min(1, Math.max(0, (e.q - Math.max(0, e.first)) / 0.25));
-  const Q = e.q * (1 + 0.25 * emerge + 0.15 * e.ball);
+  if (e.lastS !== e.s) sampleQuality(e, true);  // final scan: score the terminal state too
+  // SUSTAINED ORDER: the average over every sample from the grace point to 1M steps. A run
+  // that stopped composing (the ant left home, or the picture turned to chaos) gets zero
+  // for the rest of the horizon, so lasting order beats a single good moment.
+  const lateN = Math.floor((EV.MAX - EV.GRACE) / EV.SAMPLE) + 1;
+  const stopped = e.left || e.culled;
+  const Qs = stopped ? e.qSum / lateN : (e.qN ? e.qSum / e.qN : (e.allN ? e.allSum / e.allN : 0));
+  // LIFE: average share of the screen re-forming per 50k steps. Below LIFE_LO the score
+  // keeps LIFE_FLOOR (a static picture forfeits 60%); at LIFE_HI and above, full credit.
+  const intervals = Math.floor(EV.MAX / EV.SAMPLE) - 1;
+  const L = e.lifeN ? e.lifeSum / (stopped ? intervals : e.lifeN) : 0;
+  const life = Math.max(0, Math.min(1, (L - EV.LIFE_LO) / (EV.LIFE_HI - EV.LIFE_LO)));
+  const lifeF = EV.LIFE_FLOOR + (1 - EV.LIFE_FLOOR) * life;
+  // COMPOSITION: a picture made of solid colour must build a real composition at some point
+  // in the run. Peaking at 5 regions or fewer (a band, a square, two halves) forfeits 60%;
+  // 9+ regions is full credit. Scaled by how much of the picture is solid colour, so lace
+  // and crystals (fine texture) are unaffected.
+  const comp = 0.40 + 0.60 * Math.max(0, Math.min(1, (e.regMax - 5) / 4));
+  const solid = e.solidN ? e.solidSum / e.solidN : e.lastSolid;
+  const compF = 1 - solid * (1 - comp);
+  // emergence: how much better the lasting order is than the first look (order that
+  // EMERGED), plus a small nod if the ant ever locked into ballistic (highway) motion.
+  const emerge = Math.min(1, Math.max(0, (Qs - Math.max(0, e.first)) / 0.25));
+  const Q = Qs * lifeF * compF * (1 + 0.25 * emerge + EV.HIGHWAY * e.ball);
   const fit = (e.cov < EV.MINCOV && Q === 0)
     ? e.cov
     : Math.round(Q * 1e9) + dirBonus(e.r) + Math.min(e.cov, 999999);
-  e.result = { fit, q: Q, at: e.at, sym: e.sym, D: e.D, em: emerge, ball: e.ball, cov: e.cov, ch: e.ch, div: e.div, img: captureEvalImage(e) };
+  e.result = { fit, q: Q, at: e.at, sym: e.sym, D: e.D, em: emerge, ball: e.ball, cov: e.cov, ch: e.ch, div: e.div,
+               life, mess: e.messN ? e.messSum / e.messN : 0, regions: e.regMax, img: captureEvalImage(e) };
 }
 // Snapshot of the evaluation grid exactly as it was graded, so the preview shows the
 // state the score was assigned to (step 1,000,000, or wherever the run actually ended:
@@ -1058,9 +1191,10 @@ function advanceEval(maxChunk) {
     if (x < 0) x += W; else if (x >= W) x -= W;
     if (y < 0) y += H; else if (y >= H) y -= H;
     // an ant more than WANDER arenas from home is tiling the torus (a wrapped highway
-    // smearing stripes across the world), not composing on this screen: the run ends,
-    // and whatever it built before leaving is what gets graded.
-    if (ux > EV.WANDER * W || ux < -EV.WANDER * W || uy > EV.WANDER * H || uy < -EV.WANDER * H) { done = true; break; }
+    // smearing stripes across the world), not composing on this screen: the run ends, and
+    // the rest of the horizon counts as zero order. Stripe-tilers leave within ~50k steps;
+    // living triangle fields drift far too, but slowly, so 8 arenas lets them finish.
+    if (ux > EV.WANDER * W || ux < -EV.WANDER * W || uy > EV.WANDER * H || uy < -EV.WANDER * H) { e.left = true; done = true; break; }
     if (x < minx) minx = x; else if (x > maxx) maxx = x;
     if (y < miny) miny = y; else if (y > maxy) maxy = y;
     if (s % 5000 === 0) {                       // ballistic (highway) detector
@@ -1077,8 +1211,8 @@ function advanceEval(maxChunk) {
   e.minx = minx; e.maxx = maxx; e.miny = miny; e.maxy = maxy;
   if (sampled && !done) {
     const ps = sampleQuality(e, true);
-    // grace period: chaos is allowed early (order may EMERGE); after it, texture must exist
-    if (s >= EV.GRACE && ps.rep < EV.CONTREP) done = true;
+    // grace period: chaos is allowed early (order may EMERGE); after it, order must exist
+    if (s >= EV.GRACE && Math.max(ps.rep, ps.repS) < EV.CONTREP) { e.culled = true; done = true; }
   }
   if (done) finishEval();
 }
@@ -1142,7 +1276,7 @@ function nextGeneration() {
   for (let i = 0; i < ELITE_KEEP && i < population.length; i++) {
     const p = population[i];
     if (seen.has(canonKey(p.rule))) continue;               // mirror twins: keep one elite slot
-    next.push({ rule: p.rule.slice(), fit: p.fit, q: p.q, at: p.at, sym: p.sym, D: p.D, ch: p.ch, em: p.em, ball: p.ball, cov: p.cov, div: p.div, img: p.img });
+    next.push({ rule: p.rule.slice(), fit: p.fit, q: p.q, at: p.at, sym: p.sym, D: p.D, ch: p.ch, em: p.em, ball: p.ball, cov: p.cov, div: p.div, life: p.life, mess: p.mess, img: p.img });
     seen.add(canonKey(p.rule));
   }
   // Turmite rule space is nearly gradient-free: one symbol change usually swaps the whole
@@ -1168,7 +1302,7 @@ function recordArchive(cand) {
   if (cand.fit === undefined || cand.q === undefined || cand.q <= 0) return;
   const key = canonKey(cand.rule);          // a rule and its mirror are ONE archive entry
   const cur = archive.get(key);
-  if (!cur || cand.fit > cur.fit) archive.set(key, { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, div: cand.div, img: cand.img, found: discovery++ });
+  if (!cur || cand.fit > cur.fit) archive.set(key, { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, div: cand.div, life: cand.life, mess: cand.mess, img: cand.img, found: discovery++ });
   if (archive.size > 400) {                 // prune: keep the best 200 ever
     const keep = [...archive.values()].sort((a, b) => b.fit - a.fit).slice(0, 200);
     archive.clear();
@@ -1193,7 +1327,7 @@ function placeInMap(cand) {
   if (!key) return;
   const cur = eliteMap.get(key);
   if (!cur || cand.q > cur.q) {
-    eliteMap.set(key, { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, div: cand.div, img: cand.img, found: discovery });
+    eliteMap.set(key, { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, div: cand.div, life: cand.life, mess: cand.mess, img: cand.img, found: discovery });
     mapDirty = true;
   }
 }
@@ -1218,13 +1352,13 @@ function searchTick() {
     advanceEval(EV.SAMPLE);                                // ~one inter-sample segment
     if (curEval.result) {
       const res = curEval.result;
-      cand.fit = res.fit; cand.q = res.q; cand.at = res.at; cand.sym = res.sym; cand.D = res.D; cand.ch = res.ch; cand.em = res.em; cand.ball = res.ball; cand.cov = res.cov; cand.div = res.div; cand.img = res.img;
+      cand.fit = res.fit; cand.q = res.q; cand.at = res.at; cand.sym = res.sym; cand.D = res.D; cand.ch = res.ch; cand.em = res.em; cand.ball = res.ball; cand.cov = res.cov; cand.div = res.div; cand.life = res.life; cand.mess = res.mess; cand.img = res.img;
       evalsDone++;
       recordArchive(cand);                                 // EVERY scored rule competes for the board
       renderTopList();                                     // cheap: skips if top-6 unchanged
       renderEliteMap();                                    // cheap: skips if map unchanged
       if ((!best || cand.fit > best.fit) && cand.q > 0) {
-        best = { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, div: cand.div, img: cand.img };
+        best = { rule: cand.rule.slice(), fit: cand.fit, q: cand.q, at: cand.at, sym: cand.sym, D: cand.D, ch: cand.ch, em: cand.em, ball: cand.ball, cov: cand.cov, div: cand.div, life: cand.life, mess: cand.mess, img: cand.img };
         onNewBest();
       }
       curEval = null; evalIdx++;
@@ -1261,9 +1395,11 @@ function metaText(e) {
     " \u00b7 sym " + Math.round(e.sym * 100) + "%" +
     (e.ch !== undefined ? " \u00b7 color " + Math.round(e.ch * 100) + "%" : "") +
     (e.div !== undefined ? " \u00b7 fills " + e.div.toFixed(1) : "") +
+    (e.life !== undefined ? " \u00b7 life " + Math.round(e.life * 100) + "%" : "") +
+    (e.mess !== undefined ? " \u00b7 mess " + Math.round(e.mess * 100) + "%" : "") +
     (e.em > 0.05 ? " \u00b7 emerged +" + Math.round(e.em * 100) + "%" : "") +
     (e.ball ? " \u00b7 highway" : "") +
-    " \u00b7 peak at " + e.at.toLocaleString() + " \u00b7 " + e.cov.toLocaleString() + " cells";
+    " \u00b7 best moment " + e.at.toLocaleString() + " \u00b7 " + e.cov.toLocaleString() + " cells";
 }
 function showEntry(e) {
   selected = e.rule.slice();
@@ -1460,12 +1596,12 @@ loop();
    ============================================================================ */
 
 /* ---------------- router ---------------- */
-const VIEWS = { home: "homeView", turmite: "turmiteView", t3d: "t3View", eca: "ecaView", lights: "loView", sphinx: "sxView" };
+const VIEWS = { home: "homeView", turmite: "turmiteView", t3d: "t3View", garden: "gdView", lights: "loView", sphinx: "sxView" };
 const STATUS = {
   home:    "MIND TEMPLE v1.0  \u2014  pick an engine. The evolve search, once started, keeps computing in every room.",
   turmite: "TURMITE LAB  \u2014  drag to pan, wheel to zoom. [Rule] edits the law; [Evolve] breeds a zoo of order.",
   t3d: "TURMITE 3D  \u2014  drag to orbit, shift-drag to pan, wheel to zoom. A walker with a frame in a 10,000\u00b3 torus.",
-  eca:     "RULE SCROLLS  \u2014  256 possible one-dimensional laws. Type a number 0..255 or walk the famous ones.",
+  garden:  "THE GARDEN (beta)  \u2014  creatures evolve from a single plant. Drag sliders mid-run to reshape the fitness landscape; paint with the brush.",
   lights:  "LIGHTS OUT  \u2014  each press flips a cross. Parity is truth: order of presses never matters.",
   sphinx:  "THE SPHINX  \u2014  endless generated logic puzzles. Keys 1\u20136 answer, Enter moves on. Difficulty adapts to you."
 };
@@ -1477,7 +1613,7 @@ function showView(name) {
   document.querySelectorAll("#menubar .mbtn[data-view]").forEach(b =>
     b.classList.toggle("cur", b.dataset.view === name));
   document.getElementById("statusText").textContent = STATUS[name];
-  if (name === "eca") ecaEnsure();
+  if (name === "garden" && window.gdEnsure) window.gdEnsure();
   if (name === "sphinx" && window.sxEnsure) window.sxEnsure();
 }
 document.querySelectorAll("[data-view]").forEach(el =>
@@ -1509,101 +1645,6 @@ function drawOracle() {
 }
 document.getElementById("oracleBtn").onclick = drawOracle;
 document.getElementById("oracleBtn2").onclick = drawOracle;
-
-/* ---------------- RULE SCROLLS: elementary cellular automata ---------------- */
-const ecaCanvas = document.getElementById("ecaCanvas");
-const ectx = ecaCanvas.getContext("2d");
-const ECA_CELL = 3;
-let ecaRule = 30, ecaTable = [], ecaRow = null, ecaCols = 0, ecaY = 0;
-let ecaRunning = true, ecaRowsPerFrame = 4, ecaSeedSingle = true, ecaInit = false;
-const ECA_NAMES = { 30: "chaos / randomness", 54: "gliders in lace", 90: "Sierpinski weave",
-  110: "Turing-complete", 184: "traffic flow", 250: "checker flood", 150: "XOR trinity", 22: "one-armed lace" };
-function ecaSetRule(n) {
-  ecaRule = ((n % 256) + 256) % 256;
-  ecaTable = []; for (let i = 0; i < 8; i++) ecaTable.push((ecaRule >> i) & 1);
-  document.getElementById("ecaRuleNum").value = ecaRule;
-  document.getElementById("ecaName").textContent = ECA_NAMES[ecaRule] || "";
-  updateLawUI();
-}
-/* the law, drawn as Wolfram draws it: neighborhoods 111..000 with clickable outputs */
-const lawItemsEl = document.getElementById("lawItems");
-const lawOutEls = [];
-for (let k = 7; k >= 0; k--) {              // display MSB (111) on the left
-  const item = document.createElement("span"); item.className = "lawItem";
-  item.title = "neighborhood " + ((k >> 2) & 1) + ((k >> 1) & 1) + (k & 1);
-  const top = document.createElement("span"); top.className = "lawTop";
-  for (const bit of [(k >> 2) & 1, (k >> 1) & 1, k & 1]) {
-    const c = document.createElement("span");
-    c.className = "lawCell" + (bit ? " on" : "");
-    top.append(c);
-  }
-  const out = document.createElement("span");
-  out.className = "lawOut"; out.dataset.bit = k;
-  out.onclick = () => { ecaSetRule(ecaRule ^ (1 << k)); };   // LIVE: no restart
-  item.append(top, out);
-  lawItemsEl.append(item);
-  lawOutEls[k] = out;
-}
-function updateLawUI() {
-  for (let k = 0; k < 8; k++) lawOutEls[k].classList.toggle("on", !!((ecaRule >> k) & 1));
-}
-function ecaSize() {
-  const bar = document.getElementById("ecaBar").offsetHeight
-            + document.getElementById("ecaLaw").offsetHeight;
-  const w = window.innerWidth, h = window.innerHeight - 30 - 24 - bar;
-  ecaCanvas.width = w; ecaCanvas.height = Math.max(60, h);
-  ecaCols = Math.max(8, Math.floor(w / ECA_CELL));
-}
-function ecaRestart() {
-  ecaSize();
-  ecaRow = new Uint8Array(ecaCols);
-  if (ecaSeedSingle) ecaRow[ecaCols >> 1] = 1;
-  else for (let i = 0; i < ecaCols; i++) ecaRow[i] = Math.random() < 0.5 ? 1 : 0;
-  ecaY = 0;
-  ectx.fillStyle = "#FFFFFF";
-  ectx.fillRect(0, 0, ecaCanvas.width, ecaCanvas.height);
-  ecaDrawRow();
-}
-function ecaDrawRow() {
-  const y = ecaY * ECA_CELL;
-  ectx.fillStyle = "#FFFFFF";
-  ectx.fillRect(0, y, ecaCanvas.width, ECA_CELL);
-  ectx.fillStyle = "#000000";
-  for (let i = 0; i < ecaCols; i++)
-    if (ecaRow[i]) ectx.fillRect(i * ECA_CELL, y, ECA_CELL, ECA_CELL);
-}
-function ecaStep() {
-  const next = new Uint8Array(ecaCols);
-  for (let i = 0; i < ecaCols; i++) {
-    const l = ecaRow[(i - 1 + ecaCols) % ecaCols], c = ecaRow[i], r = ecaRow[(i + 1) % ecaCols];
-    next[i] = ecaTable[(l << 2) | (c << 1) | r];
-  }
-  ecaRow = next;
-  const maxRows = Math.floor(ecaCanvas.height / ECA_CELL);
-  if (ecaY + 1 >= maxRows) {          // scroll the scripture upward
-    ectx.drawImage(ecaCanvas, 0, ECA_CELL, ecaCanvas.width, ecaCanvas.height - ECA_CELL,
-                              0, 0,        ecaCanvas.width, ecaCanvas.height - ECA_CELL);
-  } else ecaY++;
-  ecaDrawRow();
-}
-function ecaLoop() {
-  if (window.MT_VIEW === "eca" && ecaRunning && ecaRow)
-    for (let n = 0; n < ecaRowsPerFrame; n++) ecaStep();
-  requestAnimationFrame(ecaLoop);
-}
-function ecaEnsure() { if (!ecaInit) { ecaInit = true; ecaSetRule(30); ecaRestart(); ecaLoop(); } }
-document.getElementById("ecaRuleNum").addEventListener("change", (e) => { ecaSetRule(+e.target.value || 0); ecaRestart(); });
-document.getElementById("ecaRandomRule").onclick = () => { ecaSetRule((Math.random() * 256) | 0); ecaRestart(); };
-document.querySelectorAll(".ecaPreset").forEach(b => b.onclick = () => { ecaSetRule(+b.dataset.r); ecaRestart(); });
-document.getElementById("ecaSeedBtn").onclick = (e) => {
-  ecaSeedSingle = !ecaSeedSingle;
-  e.target.textContent = ecaSeedSingle ? "single" : "random";
-  ecaRestart();
-};
-document.getElementById("ecaRestart").onclick = ecaRestart;
-document.getElementById("ecaPause").onclick = (e) => { ecaRunning = !ecaRunning; e.target.textContent = ecaRunning ? "Pause" : "Run"; };
-document.getElementById("ecaSpeed").oninput = (e) => { ecaRowsPerFrame = +e.target.value; };
-window.addEventListener("resize", () => { if (ecaInit && window.MT_VIEW === "eca") ecaRestart(); });
 
 /* ---------------- LIGHTS OUT (2-D boards and 3-D cubes) ---------------- */
 let loN = 5, loDim = 2, loBoard = null, loMoves = 0, loHintIdx = -1, loDone = false;
@@ -2383,9 +2424,12 @@ const POP = 24, ELITE_KEEP = 3;
 let population = [], gen = 0, evalIdx = 0, evalsDone = 0, best = null, searchOn = false;
 const archive = new Map();
 let discovery = 0;
+/* Children must land somewhere NEW to fill the zoo, so they differ from the parent a lot:
+   40% start with a structural jump (the whole rule rearranged), then 2-5 point edits. */
 function mutate(r) {
   r = r.slice();
-  const edits = 1 + rndInt(3);
+  if (Math.random() < 0.40) r = jump(r);
+  const edits = 2 + rndInt(4);
   for (let k = 0; k < edits; k++) {
     const roll = Math.random();
     if (roll < 0.15 && r.length < maxStates) r.splice(rndInt(r.length + 1), 0, rndSym());
@@ -2393,6 +2437,26 @@ function mutate(r) {
     else r[rndInt(r.length)] = rndSym();
   }
   return ensureValid(r);
+}
+const FRAME = { L: 'U', U: 'L', R: 'D', D: 'R' };            // turn sideways <-> turn up/down
+function jump(r) {
+  r = r.slice();
+  const n = r.length, roll = Math.random();
+  if (roll < 0.16) return r.reverse();                                          // read the rule backwards
+  if (roll < 0.32) { const k = 1 + rndInt(n - 1); return r.slice(k).concat(r.slice(0, k)); }   // rotate: a new background state
+  if (roll < 0.46) {                                                             // two swaps
+    for (let t = 0; t < 2; t++) { const a = rndInt(n), b = rndInt(n); const x = r[a]; r[a] = r[b]; r[b] = x; }
+    return r;
+  }
+  if (roll < 0.58) return r.map(c => FRAME[c] || c);                            // pitch the whole rule into the other plane
+  if (roll < 0.70) { const from = r[rndInt(n)], to = rndSym(); return r.map(c => c === from ? to : c); }   // remap one symbol everywhere
+  if (roll < 0.85 && n < maxStates) {                                            // duplicate a block: +1..3 states
+    const len = 1 + rndInt(Math.min(3, maxStates - n, n)), at = rndInt(n - len + 1);
+    r.splice(rndInt(n + 1), 0, ...r.slice(at, at + len));
+    return r;
+  }
+  if (n >= 5) { r.splice(rndInt(n - 1), 2); return r; }                          // shed a block: -2 states
+  return r.reverse();
 }
 function crossover(a, b) {
   let r = a.slice(0, 1 + rndInt(a.length - 1)).concat(b.slice(1 + rndInt(b.length - 1)));
@@ -2428,7 +2492,9 @@ const eliteMap = new Map();
 let mapDirty = false;
 function nicheOf(e) {
   if (!(e.D > 1.0) || e.D >= 3.0 || e.cov < EV.MINCOV) return null;
-  const col = Math.min(MAP_COLS - 1, Math.floor((e.D - 1.0) / 2.0 * MAP_COLS));
+  // 3-D turmites graded over 400k steps land at D 1.1-2.1 (measured on thousands of rules),
+  // so the ten columns span exactly that: every column can be filled.
+  const col = Math.max(0, Math.min(MAP_COLS - 1, Math.floor((e.D - 1.1) / 1.0 * MAP_COLS)));
   const row = Math.min(MAP_ROWS - 1, Math.floor((e.ch || 0) * MAP_ROWS));   // rows = COLOR
   return col + "," + row;
 }
@@ -2447,6 +2513,25 @@ function randomEliteRule() {
   const arch = [...archive.values()];
   return arch.length ? arch[rndInt(arch.length)].rule : randomRule();
 }
+/* the zoo grows from its frontier: champions whose niche borders EMPTY niches are picked as
+   parents in proportion to how many empty neighbours they have */
+function frontierRule() {
+  const pool = []; let tot = 0;
+  for (const [key, e] of eliteMap) {
+    const [c, r] = key.split(",").map(Number);
+    let empty = 0;
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      const cc = c + dc, rr = r + dr;
+      if ((dr || dc) && cc >= 0 && cc < MAP_COLS && rr >= 0 && rr < MAP_ROWS && !eliteMap.has(cc + "," + rr)) empty++;
+    }
+    if (empty) { pool.push(e); pool.push(empty); tot += empty; }
+  }
+  if (!tot) return randomEliteRule();
+  let x = Math.random() * tot;
+  for (let i = 0; i < pool.length; i += 2) if ((x -= pool[i + 1]) < 0) return pool[i].rule;
+  return pool[pool.length - 2].rule;
+}
+const tried = new Set();                     // canon keys already graded: never spend a run twice
 function nextGeneration() {
   population.sort((p, q) => q.fit - p.fit);
   const next = [], seen = new Set();
@@ -2456,22 +2541,21 @@ function nextGeneration() {
     next.push({ rule: p.rule.slice(), fit: p.fit, q: p.q, at: p.at, sym: p.sym, D: p.D, ch: p.ch, em: p.em, ball: p.ball, cov: p.cov });
     seen.add(canonKey(p.rule));
   }
-  while (next.length < POP) {
+  const breed = () => {
     const roll = Math.random();
-    let childRule;
-    if (roll < 0.40) childRule = randomRule();
-    else if (roll < 0.62) childRule = mutate(randomEliteRule());
-    else if (roll < 0.80) {                    // polish: ONE symbol substitution of a champion
-      childRule = randomEliteRule().slice();
-      childRule[rndInt(childRule.length)] = rndSym();
-      childRule = ensureValid(childRule);
-    }
-    else {
-      const pa = tournament(), pb = tournament();
-      childRule = mutate(Math.random() < 0.7 ? crossover(pa.rule, pb.rule) : pa.rule.slice());
-    }
+    if (roll < 0.30) return randomRule();                                   // pure exploration
+    if (roll < 0.62) return mutate(frontierRule());                         // big jump off the zoo's frontier
+    if (roll < 0.76) return mutate(randomEliteRule());                      // big jump off any champion
+    if (roll < 0.88) return mutate(crossover(frontierRule(), randomEliteRule()));
+    const pa = tournament(), pb = tournament();
+    return mutate(Math.random() < 0.7 ? crossover(pa.rule, pb.rule) : pa.rule.slice());
+  };
+  if (tried.size > 60000) tried.clear();
+  while (next.length < POP) {
+    let childRule = breed();
+    for (let t = 0; t < 6 && (seen.has(canonKey(childRule)) || tried.has(canonKey(childRule))); t++) childRule = breed();
     if (seen.has(canonKey(childRule))) childRule = randomRule();
-    seen.add(canonKey(childRule));
+    seen.add(canonKey(childRule)); tried.add(canonKey(childRule));
     next.push({ rule: childRule });
   }
   population = next; gen++; evalIdx = 0;
@@ -3524,6 +3608,351 @@ function ensure() {
 }
 window.sxEnsure = ensure;
 if (window.MT_VIEW === "sphinx") ensure();
+})();
+</script>
+<script>
+/* ============================================================================
+   THE GARDEN (beta): an evolution sandbox in the spirit of cell-built creature
+   engines. Organisms are clusters of cells; each cell has a job. They eat, hunt,
+   wander, age, and reproduce; every birth may mutate the body plan. Species are
+   identical body plans. The environment (light, food rain, hunger, lifespan, birth
+   cost, mutation) can be changed mid-run to reshape the fitness landscape.
+   ============================================================================ */
+(function garden() {
+"use strict";
+const $ = id => document.getElementById(id);
+// cell jobs
+const MOUTH = 1, PROD = 2, MOVE = 3, KILL = 4, ARMOR = 5, EYE = 6;
+const JOBS = [null, "mouth", "producer", "mover", "killer", "armor", "eye"];
+const COL = [null, [255, 255, 85], [85, 255, 85], [85, 255, 255], [255, 85, 85], [170, 0, 170], [255, 255, 255]];
+const FOOD_C = [40, 60, 200], WALL_C = [85, 85, 85], BG_C = [10, 10, 14];
+const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+const CPX = 6;                                       // screen pixels per world cell
+
+// ---------------- environment (live sliders) ----------------
+const ENV = {
+  light: 0.05,        // chance per tick that a producer cell makes food next to it
+  rain: 1.5,          // food dropped at random per tick per 1000 world cells
+  hunger: 0.0,        // food burned per cell per 100 ticks
+  life: 100,          // lifespan in ticks per body cell
+  cost: 1.0,          // food needed to reproduce, per body cell
+  egg: 6,             // flat food cost of every birth, whatever the size (big bodies amortise it)
+  mut: 0.10,          // chance a birth mutates the body plan
+  corpse: 0.5,        // share of a dead body's cells that turn into food (energy is lost up the chain)
+  plantsMove: 0,      // may an organism with movers still photosynthesise?
+  speed: 4            // ticks per frame
+};
+
+// ---------------- world ----------------
+let W = 0, H = 0, occ = null, kind = null, img = null, cvs = null, ctx = null, off = null, octx = null;
+// occ: 0 empty, -1 food, -2 wall, >0 organism id.  kind: job of the organism cell there
+let orgs = new Map(), nextId = 1, tick = 0, running = true, inited = false;
+let species = new Map(), nextSp = 1, extinctCount = 0;
+const hist = [];                                     // population graph
+let domSp = 0, domSince = 0;
+
+function rnd(n) { return (Math.random() * n) | 0; }
+const SYL = ["ka", "zu", "mi", "ro", "te", "na", "bo", "li", "qu", "ve", "sa", "do", "xi", "fe", "ru", "po", "an", "el", "is", "ok"];
+function spName() { let s = ""; const n = 2 + rnd(2); for (let i = 0; i < n; i++) s += SYL[rnd(SYL.length)]; return s[0].toUpperCase() + s.slice(1); }
+function bodyKey(cells) { return cells.map(c => c[0] + "," + c[1] + "," + c[2]).sort().join(";"); }
+function getSpecies(cells, parentSp) {
+  const key = bodyKey(cells);
+  let sp = species.get(key);
+  if (!sp) {
+    const par = parentSp ? [...species.values()].find(s => s.id === parentSp) : null;
+    sp = { id: nextSp++, key, name: spName(), cells: cells.map(c => c.slice()), born: tick, count: 0, peak: 0,
+           parent: par ? par.name : null, depth: par ? par.depth + 1 : 0, hue: rnd(360) };
+    species.set(key, sp);
+  }
+  return sp;
+}
+
+function sizeWorld() {
+  const view = $("gdStage");
+  W = Math.max(60, Math.floor(view.clientWidth / CPX));
+  H = Math.max(40, Math.floor(view.clientHeight / CPX));
+  cvs.width = W * CPX; cvs.height = H * CPX;
+  off = document.createElement("canvas"); off.width = W; off.height = H;
+  octx = off.getContext("2d"); img = octx.createImageData(W, H);
+}
+function reset() {
+  sizeWorld();
+  occ = new Int32Array(W * H); kind = new Uint8Array(W * H);
+  orgs.clear(); species.clear(); nextId = 1; nextSp = 1; tick = 0; extinctCount = 0; hist.length = 0; domSp = 0; domSince = 0;
+  // walls around the edge
+  for (let x = 0; x < W; x++) { occ[x] = -2; occ[(H - 1) * W + x] = -2; }
+  for (let y = 0; y < H; y++) { occ[y * W] = -2; occ[y * W + W - 1] = -2; }
+  // the first ancestor: a little plant, mouth flanked by two producers
+  const seed = [[0, 0, MOUTH], [-1, -1, PROD], [1, 1, PROD]];
+  for (let k = 0; k < 8; k++) spawn(seed, 10 + rnd(W - 20), 10 + rnd(H - 20), 8, 0);
+}
+function fits(cells, x, y, selfId) {
+  for (const [dx, dy] of cells) {
+    const xx = x + dx, yy = y + dy;
+    if (xx < 1 || yy < 1 || xx >= W - 1 || yy >= H - 1) return false;
+    const o = occ[yy * W + xx];
+    if (o !== 0 && o !== selfId && o !== -1) return false;     // food is pushed aside
+  }
+  return true;
+}
+function place(o) {
+  for (const [dx, dy, t] of o.cells) { const i = (o.y + dy) * W + o.x + dx; occ[i] = o.id; kind[i] = t; }
+}
+function unplace(o) {
+  for (const [dx, dy] of o.cells) { const i = (o.y + dy) * W + o.x + dx; if (occ[i] === o.id) { occ[i] = 0; kind[i] = 0; } }
+}
+function spawn(cells, x, y, food, parentSp) {
+  if (!fits(cells, x, y, -99)) return null;
+  const sp = getSpecies(cells, parentSp);
+  const has = t => cells.some(c => c[2] === t);
+  const o = { id: nextId++, x, y, cells, food, age: 0, dir: rnd(4), sp: sp.id, spRef: sp,
+              mover: has(MOVE), eyes: cells.filter(c => c[2] === EYE), turnIn: 20 + rnd(40) };
+  sp.count++; if (sp.count > sp.peak) sp.peak = sp.count;
+  orgs.set(o.id, o); place(o);
+  return o;
+}
+function kill(o) {
+  if (!orgs.has(o.id)) return;
+  for (const [dx, dy] of o.cells) {
+    const i = (o.y + dy) * W + o.x + dx;
+    if (occ[i] === o.id) { occ[i] = Math.random() < ENV.corpse ? -1 : 0; kind[i] = 0; }
+  }
+  orgs.delete(o.id);
+  o.spRef.count--;
+  if (o.spRef.count === 0) extinctCount++;
+}
+
+// ---------------- mutation ----------------
+const ADD_W = [0, 3, 3, 2, 2, 1.5, 1.5];            // relative odds of each job when a cell is added
+function rndJob() { let t = Math.random() * 13, k = 1; for (; k < 7; k++) { if ((t -= ADD_W[k]) < 0) break; } return Math.min(6, k); }
+function mutate(cells) {
+  const c = cells.map(x => x.slice());
+  const roll = Math.random();
+  if (roll < 0.5 || c.length < 2) {                  // grow a new cell next to an existing one
+    for (let t = 0; t < 12; t++) {
+      const b = c[rnd(c.length)], d = DIRS[rnd(4)], nx = b[0] + d[0], ny = b[1] + d[1];
+      if (!c.some(q => q[0] === nx && q[1] === ny)) { c.push([nx, ny, rndJob()]); break; }
+    }
+  } else if (roll < 0.8) c[rnd(c.length)][2] = rndJob();      // change one cell's job
+  else c.splice(rnd(c.length), 1);                             // lose a cell
+  return c;
+}
+
+// ---------------- one organism's turn ----------------
+function act(o) {
+  o.age++;
+  const n = o.cells.length;
+  if (o.age > ENV.life * n) { kill(o); return; }
+  if (ENV.hunger > 0) { o.food -= ENV.hunger * n / 100; if (o.food < 0) { kill(o); return; } }
+  const canMake = !o.mover || ENV.plantsMove;
+  for (const [dx, dy, t] of o.cells) {
+    const cx = o.x + dx, cy = o.y + dy;
+    if (t === PROD && canMake && Math.random() < ENV.light) {
+      const d = DIRS[rnd(4)], i = (cy + d[1]) * W + cx + d[0];
+      if (occ[i] === 0) occ[i] = -1;
+    } else if (t === MOUTH) {
+      for (const d of DIRS) { const i = (cy + d[1]) * W + cx + d[0]; if (occ[i] === -1) { occ[i] = 0; o.food++; } }
+    } else if (t === KILL) {
+      for (const d of DIRS) {
+        const i = (cy + d[1]) * W + cx + d[0], v = occ[i];
+        if (v > 0 && v !== o.id && kind[i] !== ARMOR) { const prey = orgs.get(v); if (prey) kill(prey); }
+      }
+    }
+  }
+  if (!orgs.has(o.id)) return;
+  if (o.mover) move(o);
+  if (o.food >= ENV.cost * n + ENV.egg) reproduce(o);
+}
+function look(o) {                                    // eyes: steer toward food, away from killers
+  for (const [ex, ey] of o.eyes) {
+    for (let d = 0; d < 4; d++) {
+      const [sx, sy] = DIRS[d];
+      for (let r = 1; r <= 8; r++) {
+        const x = o.x + ex + sx * r, y = o.y + ey + sy * r;
+        if (x < 0 || y < 0 || x >= W || y >= H) break;
+        const v = occ[y * W + x];
+        if (v === o.id) continue;
+        if (v === -1) { o.dir = d; return; }
+        if (v > 0) { if (kind[y * W + x] === KILL) { o.dir = (d + 2) & 3; return; } break; }
+        if (v === -2) break;
+      }
+    }
+  }
+}
+function move(o) {
+  if (o.eyes.length) look(o);
+  if (--o.turnIn <= 0) { o.dir = rnd(4); o.turnIn = 20 + rnd(60); }
+  const [dx, dy] = DIRS[o.dir], nx = o.x + dx, ny = o.y + dy;
+  if (!fits(o.cells, nx, ny, o.id)) { o.dir = rnd(4); return; }
+  unplace(o);
+  o.x = nx; o.y = ny;
+  for (const [cx, cy] of o.cells) { const i = (ny + cy) * W + nx + cx; if (occ[i] === -1) occ[i] = 0; }   // trampled food is lost
+  place(o);
+}
+function reproduce(o) {
+  o.food -= ENV.cost * o.cells.length + ENV.egg;
+  let cells = o.cells;
+  if (Math.random() < ENV.mut) { cells = mutate(cells); if (!cells.length) return; }
+  let span = 0; for (const [dx, dy] of cells) span = Math.max(span, Math.abs(dx), Math.abs(dy));
+  for (let t = 0; t < 4; t++) {
+    const d = DIRS[rnd(4)], dist = 2 * span + 2 + rnd(3);
+    if (spawn(cells, o.x + d[0] * dist, o.y + d[1] * dist, 0, o.sp)) return;   // newborns start with nothing
+  }
+}
+
+// ---------------- the world turn ----------------
+function step() {
+  tick++;
+  if (ENV.rain > 0) {
+    const drops = ENV.rain * W * H / 1000;
+    let k = Math.floor(drops) + (Math.random() < drops % 1 ? 1 : 0);
+    while (k-- > 0) { const i = rnd(W * H); if (occ[i] === 0) occ[i] = -1; }
+  }
+  const list = [...orgs.values()];
+  for (let i = list.length - 1; i > 0; i--) { const j = rnd(i + 1); const t = list[i]; list[i] = list[j]; list[j] = t; }
+  for (const o of list) if (orgs.has(o.id)) act(o);
+  if (tick % 25 === 0) record();
+}
+function record() {
+  let food = 0; for (let i = 0; i < occ.length; i++) if (occ[i] === -1) food++;
+  let alive = 0, top = null; for (const s of species.values()) if (s.count > 0) { alive++; if (!top || s.count > top.count) top = s; }
+  let movers = 0, killers = 0; for (const o of orgs.values()) { if (o.mover) movers++; if (o.cells.some(c => c[2] === KILL)) killers++; }
+  hist.push({ pop: orgs.size, food, sp: alive, movers, killers });
+  if (hist.length > 400) hist.shift();
+  if (top && top.id !== domSp) { domSp = top.id; domSince = tick; }
+  if (!orgs.size && running) { $("gdNote").textContent = "Everything died. Reset, or drop food and add life with the brush."; }
+}
+
+// ---------------- drawing ----------------
+function draw() {
+  const d = img.data;
+  for (let i = 0, p = 0; i < occ.length; i++, p += 4) {
+    const v = occ[i];
+    const c = v === 0 ? BG_C : v === -1 ? FOOD_C : v === -2 ? WALL_C : COL[kind[i]] || BG_C;
+    d[p] = c[0]; d[p + 1] = c[1]; d[p + 2] = c[2]; d[p + 3] = 255;
+  }
+  octx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(off, 0, 0, W * CPX, H * CPX);
+}
+function drawGraph() {
+  const g = $("gdGraph"), c = g.getContext("2d"), w = g.width, h = g.height;
+  c.fillStyle = "#fff"; c.fillRect(0, 0, w, h);
+  c.strokeStyle = "#000"; c.strokeRect(0.5, 0.5, w - 1, h - 1);
+  if (hist.length < 2) return;
+  const lines = [["pop", "#0000AA"], ["sp", "#AA00AA"], ["movers", "#00AAAA"], ["killers", "#AA0000"]];
+  for (const [k, col] of lines) {
+    let mx = 1; for (const p of hist) mx = Math.max(mx, k === "sp" ? p.sp : p.pop);
+    c.strokeStyle = col; c.lineWidth = k === "pop" ? 2 : 1.3; c.beginPath();
+    hist.forEach((p, i) => { const x = 2 + (w - 4) * i / 399, y = h - 3 - (h - 6) * p[k] / mx; i ? c.lineTo(x, y) : c.moveTo(x, y); });
+    c.stroke();
+  }
+}
+function mini(cells, size) {
+  const cv = document.createElement("canvas"); cv.width = size; cv.height = size; const c = cv.getContext("2d");
+  let mnx = 0, mxx = 0, mny = 0, mxy = 0;
+  for (const [x, y] of cells) { mnx = Math.min(mnx, x); mxx = Math.max(mxx, x); mny = Math.min(mny, y); mxy = Math.max(mxy, y); }
+  const s = Math.max(2, Math.floor(size / (Math.max(mxx - mnx, mxy - mny) + 1)));
+  const ox = (size - (mxx - mnx + 1) * s) / 2, oy = (size - (mxy - mny + 1) * s) / 2;
+  c.fillStyle = "#0a0a0e"; c.fillRect(0, 0, size, size);
+  for (const [x, y, t] of cells) { c.fillStyle = "rgb(" + COL[t].join(",") + ")"; c.fillRect(ox + (x - mnx) * s, oy + (y - mny) * s, s - (s > 3 ? 1 : 0), s - (s > 3 ? 1 : 0)); }
+  return cv;
+}
+function panel() {
+  const alive = [...species.values()].filter(s => s.count > 0).sort((a, b) => b.count - a.count);
+  $("gdStats").textContent = `tick ${tick.toLocaleString()} · ${orgs.size.toLocaleString()} organisms · ${alive.length} species alive · ${extinctCount.toLocaleString()} extinct`;
+  const box = $("gdSpecies"); box.innerHTML = "";
+  for (const s of alive.slice(0, 6)) {
+    const row = document.createElement("div"); row.className = "gdSp";
+    row.append(mini(s.cells, 34));
+    const t = document.createElement("div");
+    const jobs = {}; for (const c of s.cells) jobs[JOBS[c[2]]] = (jobs[JOBS[c[2]]] || 0) + 1;
+    t.innerHTML = `<b>${s.name}</b> · ${s.count} alive · gen ${s.depth}<br><span>${Object.entries(jobs).map(([k, v]) => v + " " + k).join(", ")}${s.parent ? " · from " + s.parent : ""}</span>`;
+    row.append(t); box.append(row);
+  }
+  const top = alive[0];
+  const held = tick - domSince;
+  $("gdPeak").innerHTML = top ? (held > 6000
+      ? `<b>${top.name}</b> has led for ${held.toLocaleString()} ticks while mutants keep appearing and failing: the population looks <b>stuck on a local peak</b>. Change the environment, or hit Extinction, to shake it loose.`
+      : `<b>${top.name}</b> leads (for ${held.toLocaleString()} ticks).`) : "";
+  drawGraph();
+}
+
+// ---------------- brush ----------------
+let brush = "food", painting = false;
+function paintAt(ev) {
+  const r = cvs.getBoundingClientRect();
+  const cx = Math.floor((ev.clientX - r.left) / (r.width / W)), cy = Math.floor((ev.clientY - r.top) / (r.height / H));
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    const x = cx + dx, y = cy + dy;
+    if (x < 1 || y < 1 || x >= W - 1 || y >= H - 1) continue;
+    const i = y * W + x, v = occ[i];
+    if (brush === "smite") { if (v > 0) { const o = orgs.get(v); if (o) kill(o); } continue; }
+    if (v > 0) continue;
+    occ[i] = brush === "food" ? -1 : brush === "wall" ? -2 : 0;
+  }
+  if (brush === "life" && occ[cy * W + cx] >= 0) spawn([[0, 0, MOUTH], [-1, -1, PROD], [1, 1, PROD]], cx, cy, 8, 0);
+}
+
+// ---------------- loop + wiring ----------------
+let last = 0;
+function loop(t) {
+  if (window.MT_VIEW === "garden") {
+    if (running) for (let k = 0; k < ENV.speed; k++) step();
+    draw();
+    if (t - last > 400) { panel(); last = t; }
+  }
+  requestAnimationFrame(loop);
+}
+const SLIDERS = [
+  ["light", "light", 0, 0.6, 0.01, v => Math.round(v * 100) + "%"],
+  ["rain", "food rain", 0, 2, 0.05, v => v.toFixed(2)],
+  ["hunger", "hunger", 0, 3, 0.05, v => v.toFixed(2)],
+  ["life", "lifespan", 20, 400, 5, v => v + "/cell"],
+  ["cost", "birth cost", 0.3, 4, 0.1, v => v.toFixed(1) + "/cell"],
+  ["egg", "egg cost", 0, 12, 0.5, v => v.toFixed(1)],
+  ["corpse", "corpse food", 0, 1, 0.05, v => Math.round(v * 100) + "%"],
+  ["mut", "mutation", 0, 0.6, 0.01, v => Math.round(v * 100) + "%"],
+  ["speed", "speed", 1, 20, 1, v => v + "×"]
+];
+function ensure() {
+  if (inited) { return; }
+  inited = true;
+  cvs = $("gdCanvas"); ctx = cvs.getContext("2d");
+  const box = $("gdSliders");
+  for (const [k, label, mn, mx, st, fmt] of SLIDERS) {
+    const row = document.createElement("label"); row.className = "gdRow";
+    const out = document.createElement("span"); out.className = "gdVal"; out.textContent = fmt(ENV[k]);
+    const inp = document.createElement("input"); inp.type = "range"; inp.min = mn; inp.max = mx; inp.step = st; inp.value = ENV[k];
+    inp.oninput = () => { ENV[k] = +inp.value; out.textContent = fmt(ENV[k]); };
+    const nm = document.createElement("span"); nm.className = "gdLab"; nm.textContent = label;
+    row.append(nm, inp, out); box.append(row);
+  }
+  const tog = (id, key, on, off) => { const b = $(id); const set = () => b.textContent = ENV[key] ? on : off; set(); b.onclick = () => { ENV[key] = ENV[key] ? 0 : 1; set(); }; };
+  tog("gdPlants", "plantsMove", "moving plants: allowed", "moving plants: no");
+  $("gdPause").onclick = e => { running = !running; e.target.textContent = running ? "Pause" : "Run"; };
+  $("gdReset").onclick = () => { $("gdNote").textContent = ""; reset(); };
+  $("gdExtinct").onclick = () => { for (const o of [...orgs.values()]) if (Math.random() < 0.9) kill(o); };
+  document.querySelectorAll(".gdBrush").forEach(b => b.onclick = () => {
+    brush = b.dataset.b; document.querySelectorAll(".gdBrush").forEach(x => x.classList.toggle("cur", x === b));
+  });
+  cvs.addEventListener("pointerdown", e => { painting = true; cvs.setPointerCapture(e.pointerId); paintAt(e); });
+  cvs.addEventListener("pointermove", e => { if (painting && brush !== "life") paintAt(e); });
+  cvs.addEventListener("pointerup", () => { painting = false; });
+  reset();
+  requestAnimationFrame(loop);
+}
+window.gdEnsure = ensure;
+window.gdDebug = {                                   // for tuning: run ticks without drawing
+  ENV, run(n) { for (let i = 0; i < n; i++) step(); },
+  census() {
+    const alive = [...species.values()].filter(s => s.count > 0).sort((a, b) => b.count - a.count);
+    let movers = 0, cells = 0; for (const o of orgs.values()) { if (o.mover) movers++; cells += o.cells.length; }
+    return { tick, pop: orgs.size, movers, meanCells: orgs.size ? cells / orgs.size : 0, species: alive.length, W, H,
+             top: alive.slice(0, 5).map(s => s.name + ":" + s.count + ":" + s.cells.map(c => "_MPVKAE"[c[2]]).join("")) };
+  }
+};
+if (window.MT_VIEW === "garden") ensure();
 })();
 </script>
 </body>
